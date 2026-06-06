@@ -1,0 +1,13 @@
+entity,entity_type,owner,owner_type,ownership_pct
+AcmeTech Corp,company,Alpha Ventures LLC,company,35
+AcmeTech Corp,company,Beta Capital Partners,company,25
+AcmeTech Corp,company,John Smith,person,20
+AcmeTech Corp,company,Jane Doe,person,10
+AcmeTech Corp,company,Gamma Holdings Ltd,company,10
+Alpha Ventures LLC,company,Northwest Equity Fund,company,60
+Alpha Ventures LLC,company,Sarah Johnson,person,40
+Beta Capital Partners,company,Delta Trust International,company,100
+Delta Trust International,company,Coastal Finance Group,company,80
+Delta Trust International,company,Michael Chen,person,20
+Coastal Finance Group,company,Ivan Petrovich Kozlov,person,100
+Gamma Holdings Ltd,company,Johan Petrovitch Kozlov,person,100

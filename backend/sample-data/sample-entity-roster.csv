@@ -1,0 +1,5 @@
+Shareholder_Name,Entity_Type,Passport_Or_Reg_No,Country_Of_Residence,Shares_Owned,Ownership_Percentage,Sanction_Check_Status,Screened_Against_Lists,Date_Screened,Compliance_Officer_Name
+Alpha Holdings Inc,Corporate,US-123456789,United States,50000,50.00%,Cleared,"OFAC SDN, UN",2026-06-04,J. Doe
+John Doe,Individual,A123456789,India,25000,25.00%,Cleared,"OFAC SDN, EU Consolidated",2026-06-04,J. Doe
+Jane Smith,Individual,B987654321,United Kingdom,15000,15.00%,Cleared,"OFAC SDN, UK HM Treasury",2026-06-04,J. Doe
+Shadow Entity Ltd,Corporate,KY-999999999,Cayman Islands,10000,10.00%,Pending Review,"OFAC, EU",2026-06-05,J. Doe
