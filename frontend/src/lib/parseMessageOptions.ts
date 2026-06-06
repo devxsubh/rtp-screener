@@ -69,7 +69,7 @@ export function parseMessageOptions(text: string): ParsedMessageOptions | null {
     const blockEnd = collected[collected.length - 1].lineIndex;
 
     const before = lines.slice(0, blockStart);
-    let after = lines.slice(blockEnd + 1);
+    const after = lines.slice(blockEnd + 1);
 
     while (
         after.length > 0 &&
