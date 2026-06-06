@@ -12,8 +12,16 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { RtpDocument, RtpWorkflow } from "../shared/types";
+import type { RtpDocument, RtpMessage, RtpWorkflow } from "../shared/types";
 import { createTabularReview } from "@/app/lib/rtpGlobalApi";
+import { getStartup, listCsvs } from "@/lib/startupsApi";
+import type { ScreeningResult } from "@/lib/screenerTypes";
+import {
+    isCsvAssetId,
+    isDocumentAssetId,
+    isScreeningAssetId,
+    parseCsvAssetId,
+} from "@/lib/workflowAssetIds";
 import { useRouter } from "next/navigation";
 import { formatIcon, formatLabel } from "../tabular/columnFormat";
 import { useDirectoryData } from "../shared/useDirectoryData";
@@ -346,29 +354,87 @@ export function DisplayWorkflowModal({ workflows, workflow, onClose }: Props) {
     // ---------------------------------------------------------------------------
     // Handlers
     // ---------------------------------------------------------------------------
+    async function resolveSelectedAssets(): Promise<{
+        files: { filename: string; document_id: string }[];
+        csvContent?: string;
+        screeningResult?: ScreeningResult;
+    }> {
+        const allDocs: RtpDocument[] = [
+            ...standaloneDocuments,
+            ...projects.flatMap((p) => p.documents || []),
+        ];
+        const files = allDocs
+            .filter(
+                (d) =>
+                    selectedDocIds.has(d.id) && isDocumentAssetId(d.id),
+            )
+            .map((d) => ({ filename: d.filename, document_id: d.id }));
+
+        const csvSelections = [...selectedDocIds].filter(isCsvAssetId);
+        let csvContent: string | undefined;
+        if (csvSelections.length === 1) {
+            const parsed = parseCsvAssetId(csvSelections[0]);
+            if (parsed) {
+                const csvList = await listCsvs(parsed.projectId);
+                const match = csvList.find((c) => c.id === parsed.csvId);
+                if (match?.content) {
+                    csvContent = match.content;
+                }
+            }
+        }
+
+        const screeningSelections = [...selectedDocIds].filter(
+            isScreeningAssetId,
+        );
+        let screeningResult: ScreeningResult | undefined;
+        if (screeningSelections.length === 1) {
+            const parts = screeningSelections[0]
+                .slice("screening:".length)
+                .split(":");
+            const purpose = parts[0];
+            const assetProjectId = parts[1];
+            if (assetProjectId) {
+                const startup = await getStartup(assetProjectId);
+                if (purpose === "co_investor") {
+                    screeningResult =
+                        startup.lastCoInvestorScreeningResult ?? undefined;
+                } else if (purpose === "vendor") {
+                    screeningResult =
+                        startup.lastVendorScreeningResult ?? undefined;
+                } else {
+                    screeningResult =
+                        startup.lastScreeningResult ?? undefined;
+                }
+            }
+        }
+
+        return { files, csvContent, screeningResult };
+    }
+
     async function handleStartChat() {
         setSaving(true);
         try {
             const projectId = inProject ? selectedProjectId! : undefined;
             const chatId = await saveChat(projectId);
             if (!chatId) return;
-            const allDocs: RtpDocument[] = [
-                ...standaloneDocuments,
-                ...projects.flatMap((p) => p.documents || []),
-            ];
-            const files = allDocs
-                .filter((d) => selectedDocIds.has(d.id))
-                .map((d) => ({ filename: d.filename, document_id: d.id }));
+
+            const { files, csvContent, screeningResult } =
+                await resolveSelectedAssets();
+
             const content = assistantPrompt.trim()
-                ? `implement workflow\n\n${assistantPrompt.trim()}`
-                : "implement workflow";
-            setNewChatMessages([
-                {
-                    role: "user",
-                    content,
-                    files: files.length > 0 ? files : undefined,
-                },
-            ]);
+                ? `Run the "${wf.title}" workflow.\n\n${assistantPrompt.trim()}`
+                : `Run the "${wf.title}" workflow.`;
+
+            const message: RtpMessage = {
+                role: "user",
+                content,
+                workflow: { id: wf.id, title: wf.title },
+                files: files.length > 0 ? files : undefined,
+                csvContent,
+                screeningResult,
+            };
+
+            setNewChatMessages([message]);
             handleClose();
             router.push(
                 projectId
@@ -427,19 +493,36 @@ export function DisplayWorkflowModal({ workflows, workflow, onClose }: Props) {
           )
         : standaloneDocuments;
 
+    function filterProjectAssets(p: (typeof projects)[number]) {
+        const documents = (p.documents || []).filter(
+            (d) => !q || d.filename.toLowerCase().includes(q),
+        );
+        const csvs = (p.csvs || []).filter(
+            (c) => !q || c.filename.toLowerCase().includes(q),
+        );
+        const screening_assets = (p.screening_assets || []).filter(
+            (s) =>
+                !q ||
+                s.label.toLowerCase().includes(q) ||
+                (s.csv_filename?.toLowerCase().includes(q) ?? false),
+        );
+        return { ...p, documents, csvs, screening_assets };
+    }
+
     const filteredAllProjects = projects
-        .map((p) => ({
-            ...p,
-            documents: (p.documents || []).filter(
-                (d) => !q || d.filename.toLowerCase().includes(q),
-            ),
-        }))
+        .map(filterProjectAssets)
         .filter(
             (p) =>
                 !q ||
                 p.name.toLowerCase().includes(q) ||
-                p.documents.length > 0,
+                p.documents.length > 0 ||
+                p.csvs.length > 0 ||
+                p.screening_assets.length > 0,
         );
+
+    const filteredInProjectAssets = selectedProject
+        ? filterProjectAssets(selectedProject)
+        : null;
 
     // ---------------------------------------------------------------------------
     // Render
@@ -612,7 +695,7 @@ export function DisplayWorkflowModal({ workflows, workflow, onClose }: Props) {
                                 />
                             </div>
 
-                            {inProject ? (
+                            {inProject && (
                                 <>
                                     <div className="px-5 pt-1 pb-1 shrink-0">
                                         <p className="text-xs font-medium text-gray-700">
@@ -623,70 +706,77 @@ export function DisplayWorkflowModal({ workflows, workflow, onClose }: Props) {
                                         <SimpleProjectPicker
                                             projects={projects}
                                             selectedId={selectedProjectId}
-                                            onSelect={setSelectedProjectId}
-                                        />
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="px-5 pt-1 pb-1 shrink-0">
-                                        <p className="text-xs font-medium text-gray-700">
-                                            Select documents
-                                        </p>
-                                    </div>
-
-                                    {/* Search */}
-                                    <div className="px-4 pt-1.5 pb-1 shrink-0">
-                                        <div className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1">
-                                            <Search className="h-3 w-3 text-gray-400 shrink-0" />
-                                            <input
-                                                type="text"
-                                                placeholder="Search…"
-                                                value={docSearch}
-                                                onChange={(e) =>
-                                                    setDocSearch(e.target.value)
-                                                }
-                                                className="flex-1 bg-transparent text-xs text-gray-700 placeholder:text-gray-400 outline-none"
-                                            />
-                                            {docSearch && (
-                                                <button
-                                                    onClick={() =>
-                                                        setDocSearch("")
-                                                    }
-                                                    className="text-gray-400 hover:text-gray-600"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* File browser */}
-                                    <div className="flex-1 overflow-y-auto px-4 pb-2">
-                                        <FileDirectory
-                                            standaloneDocs={filteredStandalone}
-                                            directoryProjects={
-                                                filteredAllProjects
-                                            }
-                                            loading={dirLoading}
-                                            selectedIds={selectedDocIds}
-                                            onChange={setSelectedDocIds}
-                                            allowMultiple
-                                            forceExpanded={!!q}
-                                            emptyMessage={
-                                                q
-                                                    ? "No matches found"
-                                                    : "No documents yet"
-                                            }
+                                            onSelect={(id) => {
+                                                setSelectedProjectId(id);
+                                                if (!id) setSelectedDocIds(new Set());
+                                            }}
                                         />
                                     </div>
                                 </>
                             )}
+
+                            <div className="px-5 pt-1 pb-1 shrink-0">
+                                <p className="text-xs font-medium text-gray-700">
+                                    {inProject
+                                        ? "Select project files"
+                                        : "Select documents"}
+                                </p>
+                            </div>
+
+                            <div className="px-4 pt-1.5 pb-1 shrink-0">
+                                <div className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1">
+                                    <Search className="h-3 w-3 text-gray-400 shrink-0" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search…"
+                                        value={docSearch}
+                                        onChange={(e) =>
+                                            setDocSearch(e.target.value)
+                                        }
+                                        className="flex-1 bg-transparent text-xs text-gray-700 placeholder:text-gray-400 outline-none"
+                                    />
+                                    {docSearch && (
+                                        <button
+                                            onClick={() => setDocSearch("")}
+                                            className="text-gray-400 hover:text-gray-600"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto px-4 pb-2">
+                                <FileDirectory
+                                    standaloneDocs={
+                                        inProject ? [] : filteredStandalone
+                                    }
+                                    directoryProjects={
+                                        inProject
+                                            ? filteredInProjectAssets
+                                                ? [filteredInProjectAssets]
+                                                : []
+                                            : filteredAllProjects
+                                    }
+                                    loading={dirLoading}
+                                    selectedIds={selectedDocIds}
+                                    onChange={setSelectedDocIds}
+                                    allowMultiple
+                                    forceExpanded={!!q || inProject}
+                                    emptyMessage={
+                                        q
+                                            ? "No matches found"
+                                            : inProject
+                                              ? "No files in this project"
+                                              : "No documents yet"
+                                    }
+                                />
+                            </div>
                         </div>
 
                         <div className="border-t border-gray-200 px-5 py-3 flex items-center justify-between shrink-0">
                             <span className="text-xs text-gray-400">
-                                {!inProject && selectedDocIds.size > 0
+                                {selectedDocIds.size > 0
                                     ? `${selectedDocIds.size} selected`
                                     : ""}
                             </span>

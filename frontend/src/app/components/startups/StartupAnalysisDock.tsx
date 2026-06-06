@@ -265,7 +265,7 @@ function TabButton({
             aria-selected={active}
             onClick={onClick}
             className={[
-                "relative shrink-0 px-4 py-2.5 text-sm font-medium transition-all rounded-t-lg border border-b-2",
+                "relative shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all rounded-t-lg border border-b-2",
                 active
                     ? "bg-white text-gray-900 border-gray-200 border-b-white -mb-px z-10 shadow-[0_-1px_3px_rgba(0,0,0,0.06)]"
                     : "bg-transparent text-gray-500 border-transparent border-b-gray-200 hover:text-gray-800 hover:bg-white/60",

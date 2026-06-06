@@ -3,39 +3,44 @@ const PROMPT_PRESETS: Array<{
     prompt: (title: string) => string;
 }> = [
     {
-        matches: /\bpart(y|ies)\b/i,
+        matches: /\bentit(y|ies)\b|\bshareholder\b|\bowner\b/i,
         prompt: () =>
-            'Identify all parties referenced in the document. List their full names and describe each party\'s role or capacity in the agreement. If a party is not clearly identified, state "Not addressed".',
+            "State the full legal name of this entity exactly as it appears in the cap table or entity roster.",
     },
     {
-        matches: /\bchange of control\b/i,
+        matches: /\bsanctions match\b|\blist match\b/i,
         prompt: () =>
-            'Identify any change of control provisions in the document. Summarize the trigger, the consequences, any consent requirements, and any related termination, acceleration, or notice obligations. If not addressed, state "Not addressed".',
+            "What is the closest sanctions list match for this entity? Include the matched name and list source, or state 'No match'.",
     },
     {
-        matches: /\bterminat(e|ion|ing)\b/i,
+        matches: /\bownership path\b|\bownership chain\b/i,
         prompt: () =>
-            'Extract the termination provisions in the document. Summarize who may terminate, the termination triggers, any notice requirements, cure periods, and the consequences of termination. If not addressed, state "Not addressed".',
+            "Describe the ownership chain from this entity to the portfolio company, including SPVs, offshore holdings, and trusts.",
     },
     {
-        matches: /\bgoverning law\b|\bjurisdiction\b/i,
+        matches: /\bindirect\s*%|\beffective\s*%/i,
         prompt: () =>
-            'Identify the governing law and jurisdiction provisions in the document. State the governing law, the forum for disputes, and any submission to jurisdiction or venue requirements. If not addressed, state "Not addressed".',
+            "What is the effective indirect ownership stake (%) in the portfolio company?",
     },
     {
-        matches: /\bconfidential(ity)?\b|\bnon-?disclosure\b/i,
+        matches: /\brisk\b|\brisk level\b/i,
         prompt: () =>
-            'Extract the confidentiality provisions in the document. Summarize the scope of confidential information, permitted disclosures, use restrictions, duration, and any carve-outs or exceptions. If not addressed, state "Not addressed".',
+            "Classify screening risk as Clear, Review, or Flagged. Decision support only — do not confirm a sanctions violation.",
     },
     {
-        matches: /\bassign(ment|ability)?\b/i,
+        matches: /\bjurisdiction\b|\bcountry\b/i,
         prompt: () =>
-            'Identify any assignment provisions in the document. Summarize whether assignment is permitted, restricted, or requires consent, and note any exceptions or deemed assignments. If not addressed, state "Not addressed".',
+            "State the country or jurisdiction of incorporation or residence, if known. If not addressed, state 'Not specified'.",
     },
     {
-        matches: /\bpayment\b|\bfees?\b/i,
+        matches: /\bultimate owner\b|\bubo\b|\bbeneficial owner\b/i,
         prompt: () =>
-            'Extract the payment and fee terms in the document. Summarize payment obligations, amounts, timing, currencies, fee types, and any consequences for late or missed payment. If not addressed, state "Not addressed".',
+            "Is this entity the ultimate beneficial owner with no further owner above it in the ownership graph?",
+    },
+    {
+        matches: /\bmatch score\b|\bconfidence\b/i,
+        prompt: () =>
+            "State the Watchman match confidence score (0–100%), or 'N/A' if no match.",
     },
 ];
 
@@ -52,9 +57,9 @@ export function buildFallbackTabularPrompt(title: string): string {
     if (!trimmedTitle) return "";
 
     return (
-        `Review each document and extract the information relevant to "${trimmedTitle}". ` +
-        `Provide a concise, document-specific summary for this column. ` +
-        `Include the key facts, dates, thresholds, parties, and conditions where applicable. ` +
-        `If the document does not contain relevant information, return "Not addressed".`
+        `Review the screening data or document and extract the information relevant to "${trimmedTitle}". ` +
+        `Provide a concise, entity-specific answer for this column. ` +
+        `For sanctions-related fields, use only deterministic screening results — do not invent match scores or risk classifications. ` +
+        `If the information is not available, return "Not specified".`
     );
 }

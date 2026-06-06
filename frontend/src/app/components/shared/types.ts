@@ -12,10 +12,33 @@ export interface RtpFolder {
   updated_at: string;
 }
 
+export interface RtpCapTableCsvMeta {
+  id: string;
+  filename: string;
+  uploaded_at: string;
+  csv_kind: string | null;
+  parse_status: string;
+  roster_purpose: string;
+  record_count: number;
+}
+
+export interface RtpScreeningAsset {
+  id: string;
+  label: string;
+  purpose: "cap_table" | "co_investor" | "vendor";
+  screened_at: string | null;
+  csv_filename: string | null;
+  total_entities: number;
+  flagged_count: number;
+  review_count: number;
+}
+
 export interface RtpProject {
   id: string;
   user_id: string;
   is_owner?: boolean;
+  /** Global read-only demo workspace visible to all users. */
+  is_sample?: boolean;
   name: string;
   cm_number: string | null;
   shared_with: string[];
@@ -23,6 +46,8 @@ export interface RtpProject {
   updated_at: string;
   documents?: RtpDocument[];
   folders?: RtpFolder[];
+  csvs?: RtpCapTableCsvMeta[];
+  screening_assets?: RtpScreeningAsset[];
   document_count?: number;
   chat_count?: number;
   review_count?: number;
@@ -165,6 +190,8 @@ export interface RtpMessage {
   model?: string;
   /** Client-only cap-table text for screening; not persisted to chat history. */
   csvContent?: string;
+  /** Client-only screening result for workflow bootstrap; not persisted. */
+  screeningResult?: ScreeningResult;
   annotations?: RtpCitationAnnotation[];
   events?: AssistantEvent[];
   /** Set when streaming failed; rendered as a red error block. */

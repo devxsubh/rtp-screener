@@ -6,12 +6,15 @@ import {
     ChevronDown,
     ChevronRight,
     File,
+    FileSpreadsheet,
     FileText,
     Folder,
+    Shield,
     Trash2,
     Loader2,
 } from "lucide-react";
 import type { RtpDocument, RtpProject } from "./types";
+import { csvAssetId } from "@/lib/workflowAssetIds";
 import { VersionChip } from "./VersionChip";
 
 function formatDate(iso: string | null) {
@@ -81,6 +84,14 @@ export function FileDirectory({
         ...standaloneDocs,
         ...directoryProjects.flatMap((p) => p.documents ?? []),
     ];
+
+    function projectAssetCount(project: RtpProject): number {
+        return (
+            (project.documents?.length ?? 0) +
+            (project.csvs?.length ?? 0) +
+            (project.screening_assets?.length ?? 0)
+        );
+    }
 
     const allStandaloneSelected =
         standaloneDocs.length > 0 &&
@@ -260,6 +271,9 @@ export function FileDirectory({
                     const isExpanded =
                         forceExpanded || expandedProjects.has(project.id);
                     const docs = project.documents ?? [];
+                    const csvs = project.csvs ?? [];
+                    const screenings = project.screening_assets ?? [];
+                    const assetCount = projectAssetCount(project);
                     return (
                         <div key={project.id}>
                             <button
@@ -282,69 +296,185 @@ export function FileDirectory({
                                     )}
                                 </span>
                                 <span className="text-xs text-gray-400 shrink-0">
-                                    {docs.length}
+                                    {assetCount}
                                 </span>
                             </button>
                             {isExpanded && (
                                 <div>
-                                    {docs.length === 0 ? (
+                                    {assetCount === 0 ? (
                                         <p className="pl-7 py-1 text-xs text-gray-400">
                                             Empty
                                         </p>
                                     ) : (
-                                        docs.map((doc) => {
-                                            const selected = selectedIds.has(
-                                                doc.id,
-                                            );
-                                            return (
-                                                <button
-                                                    type="button"
-                                                    key={doc.id}
-                                                    onClick={() =>
-                                                        toggle(doc.id)
-                                                    }
-                                                    className={`w-full flex items-center gap-2 pl-7 pr-2 py-2 text-xs transition-colors text-left  ${
-                                                        selected
-                                                            ? "bg-gray-100"
-                                                            : "hover:bg-gray-50"
-                                                    }`}
-                                                >
-                                                    <span
-                                                        className={`shrink-0 h-3.5 w-3.5 rounded border flex items-center justify-center ${
+                                        <>
+                                            {docs.map((doc) => {
+                                                const selected = selectedIds.has(
+                                                    doc.id,
+                                                );
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        key={doc.id}
+                                                        onClick={() =>
+                                                            toggle(doc.id)
+                                                        }
+                                                        className={`w-full flex items-center gap-2 pl-7 pr-2 py-2 text-xs transition-colors text-left  ${
                                                             selected
-                                                                ? "bg-gray-900 border-gray-900"
-                                                                : "border-gray-300"
+                                                                ? "bg-gray-100"
+                                                                : "hover:bg-gray-50"
                                                         }`}
                                                     >
-                                                        {selected && (
-                                                            <Check className="h-2.5 w-2.5 text-white" />
-                                                        )}
-                                                    </span>
-                                                    <DocFileIcon
-                                                        fileType={doc.file_type}
-                                                    />
-                                                    <span
-                                                        className={`flex-1 truncate min-w-0 ${
-                                                            selected
-                                                                ? "text-gray-900 font-medium"
-                                                                : "text-gray-700"
-                                                        }`}
-                                                    >
-                                                        {doc.filename}
-                                                    </span>
-                                                    <VersionChip
-                                                        n={doc.latest_version_number}
-                                                    />
-                                                    {doc.created_at && (
-                                                        <span className="shrink-0 text-gray-300">
-                                                            {formatDate(
-                                                                doc.created_at,
+                                                        <span
+                                                            className={`shrink-0 h-3.5 w-3.5 rounded border flex items-center justify-center ${
+                                                                selected
+                                                                    ? "bg-gray-900 border-gray-900"
+                                                                    : "border-gray-300"
+                                                            }`}
+                                                        >
+                                                            {selected && (
+                                                                <Check className="h-2.5 w-2.5 text-white" />
                                                             )}
                                                         </span>
-                                                    )}
-                                                </button>
-                                            );
-                                        })
+                                                        <DocFileIcon
+                                                            fileType={
+                                                                doc.file_type
+                                                            }
+                                                        />
+                                                        <span
+                                                            className={`flex-1 truncate min-w-0 ${
+                                                                selected
+                                                                    ? "text-gray-900 font-medium"
+                                                                    : "text-gray-700"
+                                                            }`}
+                                                        >
+                                                            {doc.filename}
+                                                        </span>
+                                                        <VersionChip
+                                                            n={
+                                                                doc.latest_version_number
+                                                            }
+                                                        />
+                                                        {doc.created_at && (
+                                                            <span className="shrink-0 text-gray-300">
+                                                                {formatDate(
+                                                                    doc.created_at,
+                                                                )}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                            {csvs.map((csv) => {
+                                                const assetId = csvAssetId(
+                                                    project.id,
+                                                    csv.id,
+                                                );
+                                                const selected =
+                                                    selectedIds.has(assetId);
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        key={assetId}
+                                                        onClick={() =>
+                                                            toggle(assetId)
+                                                        }
+                                                        className={`w-full flex items-center gap-2 pl-7 pr-2 py-2 text-xs transition-colors text-left  ${
+                                                            selected
+                                                                ? "bg-gray-100"
+                                                                : "hover:bg-gray-50"
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`shrink-0 h-3.5 w-3.5 rounded border flex items-center justify-center ${
+                                                                selected
+                                                                    ? "bg-gray-900 border-gray-900"
+                                                                    : "border-gray-300"
+                                                            }`}
+                                                        >
+                                                            {selected && (
+                                                                <Check className="h-2.5 w-2.5 text-white" />
+                                                            )}
+                                                        </span>
+                                                        <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                                                        <span
+                                                            className={`flex-1 truncate min-w-0 ${
+                                                                selected
+                                                                    ? "text-gray-900 font-medium"
+                                                                    : "text-gray-700"
+                                                            }`}
+                                                        >
+                                                            {csv.filename}
+                                                        </span>
+                                                        <span className="shrink-0 text-[10px] text-gray-400 uppercase">
+                                                            CSV
+                                                        </span>
+                                                        <span className="shrink-0 text-gray-300">
+                                                            {formatDate(
+                                                                csv.uploaded_at,
+                                                            )}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                            {screenings.map((screening) => {
+                                                const selected =
+                                                    selectedIds.has(
+                                                        screening.id,
+                                                    );
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        key={screening.id}
+                                                        onClick={() =>
+                                                            toggle(
+                                                                screening.id,
+                                                            )
+                                                        }
+                                                        className={`w-full flex items-center gap-2 pl-7 pr-2 py-2 text-xs transition-colors text-left  ${
+                                                            selected
+                                                                ? "bg-gray-100"
+                                                                : "hover:bg-gray-50"
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`shrink-0 h-3.5 w-3.5 rounded border flex items-center justify-center ${
+                                                                selected
+                                                                    ? "bg-gray-900 border-gray-900"
+                                                                    : "border-gray-300"
+                                                            }`}
+                                                        >
+                                                            {selected && (
+                                                                <Check className="h-2.5 w-2.5 text-white" />
+                                                            )}
+                                                        </span>
+                                                        <Shield className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                                                        <span
+                                                            className={`flex-1 truncate min-w-0 ${
+                                                                selected
+                                                                    ? "text-gray-900 font-medium"
+                                                                    : "text-gray-700"
+                                                            }`}
+                                                        >
+                                                            {screening.label}
+                                                            {screening.csv_filename
+                                                                ? ` — ${screening.csv_filename}`
+                                                                : ""}
+                                                        </span>
+                                                        <span className="shrink-0 text-[10px] text-gray-400">
+                                                            {screening.flagged_count}{" "}
+                                                            flagged
+                                                        </span>
+                                                        {screening.screened_at && (
+                                                            <span className="shrink-0 text-gray-300">
+                                                                {formatDate(
+                                                                    screening.screened_at,
+                                                                )}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </>
                                     )}
                                 </div>
                             )}

@@ -1,6 +1,6 @@
 # RTP Global — VC Sanctions & Cap-Table Screener
 
-A decision-support tool for venture firms. Upload a startup cap table (CSV) → screen every owner, including those hidden behind shell-company layers, against sanctions lists → receive a plain-English risk report with confidence scores.
+A decision-support tool for venture firms. Upload a startup cap table (CSV), screen every owner (including UBOs behind shell-company layers) against OFAC/EU sanctions lists, and get a plain-English risk report with ownership graph, entity table, and Claude-generated analyst notes.
 
 **It never decides guilt.** It narrows the review set for a human compliance officer.
 
@@ -8,69 +8,89 @@ A decision-support tool for venture firms. Upload a startup cap table (CSV) → 
 
 ## Architecture
 
-```
-backend/   Express API (Node/TypeScript)  — port 3001
-frontend/  Next.js app (React 19)         — port 3000
-```
+Production stack: **Vercel** hosts the Next.js UI; **AWS EC2** runs the Express API and Watchman in Docker; managed services handle data, cache, storage, and LLMs.
 
-The only API endpoint is `POST /api/screen`. No database, no auth — stateless per-request processing.
+![RTP Global system architecture](docs/architecture-diagram.svg)
 
-### Backend flow
+| Layer | Where | Role |
+|-------|--------|------|
+| **Frontend** | [Vercel](https://vercel.com) | Next.js 15, React 19, Tailwind, React Flow — cap-table upload, screening UI, assistant chat |
+| **Backend API** | AWS EC2 (Docker) | Express + TypeScript (`:3001`) — auth, screening orchestration, agentic chat |
+| **Watchman** | AWS EC2 (Docker, internal) | OFAC SDN + EU Consolidated sanctions matching |
+| **MongoDB** | Atlas | Startups, CSVs, chats, screening results, tabular reviews |
+| **Cache** | Upstash Redis | Optional Watchman result cache |
+| **Storage** | Cloudflare R2 | Document uploads |
+| **LLM** | Anthropic (Haiku) | Analyst narratives + tool-use chat |
 
-1. Parse CSV into ownership records
-2. Build a directed ownership graph with [graphology](https://graphology.github.io/)
-3. Traverse each chain (BFS + visited-set for circular ownership) to find ultimate beneficial owners
-4. Screen every node against [Watchman](https://github.com/moov-io/watchman) — `GET /v2/search?name=&type=&minMatch=0.80`
-5. Classify by top score: **clear** (<0.80) / **review** (0.80–0.95) / **flagged** (≥0.95)
-6. For review + flagged nodes, call Claude Haiku (`claude-haiku-4-5`) to write a who/why/confidence/next-step narrative (server-side only — key never reaches the client)
+**Browser → API:** HTTPS from Vercel to EC2; JWT auth via httpOnly cookies; CORS locked to `FRONTEND_URL`.
 
-### Frontend
+**Screening path:** CSV → ownership graph → Watchman search → risk classification → Claude narrative → graph + risk table in the UI.
 
-- CSV upload box (drag-and-drop)
-- Interactive ownership graph ([React Flow](https://reactflow.dev/)) — flagged nodes in red, ownership paths highlighted
-- Risk table with clear/review/flagged badges and scores
-- Expandable risk cards showing ownership chain, Watchman matches, and Claude's analyst notes
+Full topology, request flows, env split, and deploy checklist: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** · editable SVG: **[docs/architecture-diagram.svg](docs/architecture-diagram.svg)**
 
 ---
 
-## Setup
+## Local development
 
-### 1 — Watchman (sanctions data service)
+### 1. Watchman (sanctions lists)
 
 ```bash
-docker run --rm -p 8084:8084 moov/watchman:static
+docker compose -f docker-compose.dev.yml up
+# Wait ~30–60 s for SDN/EU lists to load
 ```
 
-Watchman loads OFAC SDN, EU Consolidated, and other lists on startup (~30 s).
-
-### 2 — Environment
+### 2. Environment & dev server
 
 ```bash
-cp .env.example .env   # one file at repo root for backend + frontend
+cp .env.example .env
 # Edit .env: ANTHROPIC_API_KEY, MONGODB_URI, JWT keys, etc.
 pnpm install
-pnpm dev               # starts both backend (:3001) and frontend (:3000)
+pnpm dev    # backend :3001 + frontend :3000
 ```
 
-**Root `.env` keys (see `.env.example` for full list):**
+| Variable | Local default |
+|----------|---------------|
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:3001` |
+| `FRONTEND_URL` | `http://localhost:3000` |
+| `WATCHMAN_URL` | `http://localhost:8084` |
+| `MONGODB_URI` | `mongodb://localhost:27017/vc-screener` or Atlas |
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_API_BASE_URL` | Frontend → backend URL (default `http://localhost:3001`) |
-| `PORT` | Backend port (default `3001`) |
-| `FRONTEND_URL` | CORS origin (default `http://localhost:3000`) |
-| `ANTHROPIC_API_KEY` | Required for Claude analyst notes |
-| `MONGODB_URI` | MongoDB connection string |
-| `WATCHMAN_URL` | Watchman base URL (default `http://localhost:8084`) |
+**Preview mode** (no auth): set `ALLOW_PREVIEW_MODE=true` and `NEXT_PUBLIC_ALLOW_PREVIEW_MODE=true` in `.env` — local only.
 
-Legacy `backend/.env` and `frontend/.env.local` still work as optional overrides, but **prefer editing root `.env` only**.
-
-### 3 — Individual services (optional)
+### 3. Individual services
 
 ```bash
-pnpm --filter vc-screener-backend dev   # backend only (:3001)
-pnpm --filter rtp-global dev            # frontend only (:3000)
+pnpm --filter vc-screener-backend dev
+pnpm --filter rtp-global dev
 ```
+
+---
+
+## Production deploy
+
+**EC2** — backend + Watchman:
+
+```bash
+cp .env.example .env.production   # fill all secrets; never commit
+docker compose --env-file .env.production up -d --build
+```
+
+**Vercel** — frontend: deploy `frontend/`, set `NEXT_PUBLIC_API_BASE_URL` to your EC2 (or ALB) URL. Set `FRONTEND_URL` on the backend to your Vercel URL for CORS.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full checklist.
+
+---
+
+## Screening flow
+
+1. Parse CSV → ownership records (strict format, column aliases, or Claude schema inference)
+2. Build directed ownership graph ([graphology](https://graphology.github.io/))
+3. Traverse chains (BFS) to surface ultimate beneficial owners
+4. Screen each node via [Watchman](https://github.com/moov-io/watchman) — `GET /v2/search`
+5. Classify: **clear** (&lt;0.80) / **review** (0.80–0.95) / **flagged** (≥0.95)
+6. Claude Haiku writes who/why/confidence/next-step narratives for review + flagged entities
+
+Agentic chat (`POST /api/chat`) wraps screening in tool-use so users can ask follow-ups against stored results.
 
 ---
 
@@ -78,27 +98,34 @@ pnpm --filter rtp-global dev            # frontend only (:3000)
 
 ```csv
 entity,entity_type,owner,owner_type,ownership_pct
-AcmeTech Corp,company,Alpha Ventures LLC,company,35
-Alpha Ventures LLC,company,Sarah Johnson,person,40
+NexaFlow AI Inc,company,Emma Richardson,person,18
+Cascade Series A SPV LLC,company,Meridian Offshore Holdings Ltd,company,100
+Ashford Family Trust,company,Ivan Petrovich Kozlov,person,100
 ```
 
-| Column | Values |
-|--------|--------|
-| `entity` | Name of the entity being owned |
-| `entity_type` | `person` or `company` |
-| `owner` | Name of the owning entity |
-| `owner_type` | `person` or `company` |
-| `ownership_pct` | Percentage (0–100) |
-
-A sample file with two demo cases is at `backend/sample-data/sample-cap-table.csv`:
-- **Johan Petrovitch Kozlov** — direct (1-level) owner via Gamma Holdings; fuzzy near-match name
-- **Ivan Petrovich Kozlov** — hidden 3 levels deep (Beta Capital → Delta Trust → Coastal Finance); only the graph traversal surfaces this UBO
+**Demo dataset:** `backend/sample-data/sample-cap-table.csv` — Series A due-diligence scenario with clean, review, flagged, deep-chain UBO, and circular-ownership cases. See `backend/sample-data/DEMO.md` for the full walkthrough.
 
 ---
 
-## Development notes
+## Commands
 
-- If Watchman is not running, all entities return `clear` (no match = no hit — intentional safe default).
-- Claude calls are server-side only; `ANTHROPIC_API_KEY` is never sent to the browser.
-- The classifier thresholds (0.80 review, 0.95 flagged) live in `backend/src/lib/classify.ts`.
-- The `minMatch` passed to Watchman is `0.80`; adjust in `backend/src/lib/watchman.ts`.
+```bash
+pnpm install
+pnpm dev
+pnpm -w run typecheck
+pnpm -w run lint
+
+# Production Docker (on EC2)
+docker compose --env-file .env.production up -d --build
+
+# Local Watchman only
+docker compose -f docker-compose.dev.yml up
+```
+
+---
+
+## Docs for contributors
+
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — deployment topology, Docker, env split
+- **[CLAUDE.md](CLAUDE.md)** — source map, routes, AI assistant conventions
+- **[.claude/PROJECT.md](.claude/PROJECT.md)** — platform capabilities and custom agents

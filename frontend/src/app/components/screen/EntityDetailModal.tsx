@@ -141,7 +141,7 @@ export function EntityDetailModal({ entity, onClose, startupName }: Props) {
 
   const content = (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="entity-detail-title"
@@ -153,7 +153,7 @@ export function EntityDetailModal({ entity, onClose, startupName }: Props) {
         aria-label="Close"
       />
       <div
-        className={`relative z-[201] flex flex-col w-full max-w-3xl max-h-[92vh] bg-white rounded-2xl shadow-2xl border-2 ${theme.border} overflow-hidden`}
+        className={`relative z-[201] flex flex-col w-full max-w-3xl max-h-[100dvh] sm:max-h-[92vh] bg-white shadow-2xl border-2 ${theme.border} overflow-hidden rounded-t-2xl sm:rounded-2xl`}
       >
         <div className={`h-1 shrink-0 ${theme.accent}`} />
 
@@ -175,7 +175,7 @@ export function EntityDetailModal({ entity, onClose, startupName }: Props) {
             <div className="min-w-0">
               <h2
                 id="entity-detail-title"
-                className="text-lg font-bold text-gray-900 leading-tight"
+                className="text-lg font-bold text-gray-900 leading-tight break-words"
               >
                 {entity.name}
               </h2>

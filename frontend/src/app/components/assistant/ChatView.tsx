@@ -487,10 +487,13 @@ export function ChatView({
         return () => window.removeEventListener("resize", onResize);
     }, []);
 
-    const sidePanelMaxWidth = Math.max(
-        320,
-        viewportWidth - SIDEBAR_WIDTH - MIN_CHAT_WIDTH,
-    );
+    const isMobile = viewportWidth < 768;
+    const sidePanelMaxWidth = isMobile
+        ? viewportWidth
+        : Math.max(
+              320,
+              viewportWidth - SIDEBAR_WIDTH - MIN_CHAT_WIDTH,
+          );
 
     useEffect(() => {
         const el = chatInputRef.current;
@@ -605,19 +608,25 @@ export function ChatView({
         <div className="h-full w-full flex overflow-hidden relative">
             {/* Chat column — fixed minimum width so side panels can't crush it */}
             <div
-                className="flex flex-col h-full relative overflow-hidden shrink-0"
-                style={{
-                    flex: `1 1 ${MIN_CHAT_WIDTH}px`,
-                    minWidth: MIN_CHAT_WIDTH,
-                    maxWidth: "100%",
-                }}
+                className={`flex flex-col h-full relative overflow-hidden shrink-0 min-w-0 ${
+                    isMobile && panelVisible ? "hidden" : "flex-1"
+                }`}
+                style={
+                    isMobile
+                        ? undefined
+                        : {
+                              flex: `1 1 ${MIN_CHAT_WIDTH}px`,
+                              minWidth: MIN_CHAT_WIDTH,
+                              maxWidth: "100%",
+                          }
+                }
             >
                 {/* Scrollable messages */}
                 <div
                     ref={messagesContainerRef}
                     className="flex-1 w-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 >
-                    <div className="w-full max-w-4xl mx-auto pb-32 px-6 md:px-8 pt-4 md:pt-6 min-h-full flex flex-col relative">
+                    <div className="w-full max-w-4xl mx-auto pb-32 px-4 sm:px-6 md:px-8 pt-2 sm:pt-4 md:pt-6 min-h-full flex flex-col relative">
                         {!messagesVisible && (
                             <div className="space-y-6 w-full">
                                 <div className="flex justify-end">
@@ -792,8 +801,8 @@ export function ChatView({
 
             {panelMounted && tabs.length > 0 && (
                 <div
-                    className={`fixed md:relative inset-0 md:inset-auto md:h-full md:shrink-0 z-40 md:z-auto transition-transform duration-300 ease-in-out ${panelVisible ? "translate-x-0" : "translate-x-full md:hidden"}`}
-                    style={{ maxWidth: sidePanelMaxWidth }}
+                    className={`fixed md:relative inset-0 md:inset-auto md:h-full md:shrink-0 z-40 md:z-auto w-full md:w-auto transition-transform duration-300 ease-in-out ${panelVisible ? "translate-x-0" : "translate-x-full md:hidden"}`}
+                    style={isMobile ? undefined : { maxWidth: sidePanelMaxWidth }}
                 >
                     <AssistantSidePanel
                         tabs={tabs}

@@ -41,7 +41,7 @@ export function InitialView({ onSubmit }: InitialViewProps) {
     }, [iconOffset]);
 
     return (
-        <div className="flex flex-col h-full w-full px-6">
+        <div className="flex flex-col h-full w-full px-4 sm:px-6">
             <div className="flex-1 flex flex-col items-center justify-center">
                 <div className="flex-col items-center w-full max-w-4xl relative px-0 xl:px-8">
                     <div className="mb-10 relative flex items-center justify-center">
@@ -60,7 +60,7 @@ export function InitialView({ onSubmit }: InitialViewProps) {
                         </div>
                         <h1
                             ref={textRef}
-                            className="absolute text-4xl font-serif font-light text-gray-900 whitespace-nowrap"
+                            className="absolute text-2xl sm:text-4xl font-serif font-light text-gray-900 whitespace-nowrap max-w-[90vw] overflow-hidden text-ellipsis sm:max-w-none"
                             style={{
                                 left: "50%",
                                 transform: loaded

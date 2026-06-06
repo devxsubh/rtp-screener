@@ -12,27 +12,44 @@ A VC compliance tool that screens startup cap tables for sanctions risk. Users c
 
 ## Architecture
 
+**Canonical doc:** `docs/ARCHITECTURE.md`
+
+### Deployment topology
+
+| Layer | Where | How |
+|---|---|---|
+| Frontend | **Vercel** | `frontend/` Next.js app; `NEXT_PUBLIC_API_BASE_URL` → EC2 API |
+| Backend | **AWS EC2** | `docker-compose.yml` → `backend/Dockerfile`, port 3001 |
+| Watchman | **AWS EC2** (same compose stack) | `moov/watchman:static`, internal Docker network only |
+| MongoDB | **Atlas** | `MONGODB_URI` in `.env.production` |
+| Cache | **Upstash Redis** | Watchman result cache (optional) |
+| Storage | **Cloudflare R2** | Document uploads |
+| LLM | **Anthropic** (+ OpenAI for RAG) | API keys on EC2 only |
+
 ```
-backend/   Express + TypeScript   — port 3001  (Node.js, MongoDB, Anthropic SDK)
-frontend/  Next.js 15 + React 19  — port 3000  (Tailwind, Shadcn/ui, React Flow)
+Vercel (Next.js)  ──HTTPS/CORS──►  EC2: backend + watchman (Docker)
+                                        ├── Atlas · Upstash · R2 · Resend
 ```
+
+Local dev: Watchman via `docker compose -f docker-compose.dev.yml up`; backend + frontend on host via `pnpm dev` and root `.env`.
+
+Production EC2: `docker compose --env-file .env.production up -d --build`. Watchman URL is overridden to `http://watchman:8084` inside compose.
 
 ### Backend stack
 
-- `express` with `helmet`, `cors`, `express-rate-limit`
+- `express` with `helmet`, `cors`, `express-rate-limit`, JWT auth (RS256 cookies)
 - `@anthropic-ai/sdk` — Claude Haiku (`claude-haiku-4-5`) for analyst notes + agentic chat
-- `mongoose` — MongoDB (local or Atlas), stores startups + cap-table CSVs
+- `mongoose` — MongoDB Atlas (startups, CSVs, chats, RAG vectors)
 - `graphology` — directed ownership graph (BFS traversal, circular ownership detection)
-- Watchman (Docker) — OFAC SDN + EU Consolidated sanctions screening via `GET /v2/search`
+- Watchman — OFAC SDN + EU Consolidated via `GET /v2/search`; co-located in Docker on EC2
 
 ### Frontend stack
 
-- Next.js 15 App Router, React 19, TypeScript
+- Next.js 15 App Router, React 19, TypeScript — **deployed on Vercel**
 - Tailwind CSS + Shadcn/ui components
 - `@xyflow/react` (React Flow) — interactive ownership graph
 - `recharts` — data visualisation
-- Supabase — optional auth (set env vars to enable; leave blank for preview mode)
-- OpenNext / Cloudflare Workers — deployment target
+- JWT auth via httpOnly cookies to EC2 backend (`FRONTEND_URL` must match Vercel origin)
 
 ---
 
@@ -56,43 +73,50 @@ User uploads CSV
 ### 1. Watchman (required — sanctions data)
 
 ```bash
-docker run --rm -p 8084:8084 moov/watchman:static
-# Takes ~30s to load SDN/EU lists. Must be running for any screening to work.
+docker compose -f docker-compose.dev.yml up
+# Takes ~30–60 s to load SDN/EU lists. Must be running for any screening to work.
 ```
 
 ### 2. MongoDB
 
-```bash
-# Local:
-mongod --dbpath /data/db
-# Or use MONGODB_URI=mongodb+srv://... in root `.env`
-```
+Use local `mongod` or point `MONGODB_URI` at Atlas in root `.env` (same cluster as production is fine for dev).
 
 ### 3. Environment & dev server
 
 ```bash
-cp .env.example .env    # monorepo root — backend + frontend
-pnpm install            # installs all workspaces from root
-pnpm dev                # starts backend + frontend together
+cp .env.example .env    # monorepo root — backend + frontend on host
+pnpm install
+pnpm dev                # backend :3001 + frontend :3000
 ```
 
 Env vars (root `.env` — see `.env.example`):
 
-| Variable | Default | Notes |
+| Variable | Local | Production (EC2 / Vercel) |
 |---|---|---|
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:3001` | Frontend → backend |
-| `PORT` | `3001` | Express port |
-| `FRONTEND_URL` | `http://localhost:3000` | CORS origin |
-| `ANTHROPIC_API_KEY` | — | Required for chat + explanations |
-| *(model)* | `claude-haiku-4-5` | Locked in `backend/src/lib/llm/models.ts` — Haiku only |
-| `MONGODB_URI` | `mongodb://localhost:27017/vc-screener` | Local or Atlas |
-| `WATCHMAN_URL` | `http://localhost:8084` | Watchman Docker URL |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:3001` | EC2 public URL (Vercel env) |
+| `FRONTEND_URL` | `http://localhost:3000` | Vercel deployment URL (backend CORS) |
+| `PORT` | `3001` | `3001` (compose maps host port) |
+| `WATCHMAN_URL` | `http://localhost:8084` | `http://watchman:8084` (set by compose) |
+| `MONGODB_URI` | local or Atlas | Atlas |
+| `ANTHROPIC_API_KEY` | — | Required on EC2 |
+| *(model)* | `claude-haiku-4-5` | Locked in `backend/src/lib/llm/models.ts` |
 
-Legacy `backend/.env` / `frontend/.env.local` still override root if present; prefer root `.env` only.
+Production secrets live in `.env.production` on EC2 (from `.env.example`); never commit. Vercel only needs `NEXT_PUBLIC_*` vars.
 
-> `pnpm dev` at the root starts both services. Individual: `pnpm --filter vc-screener-backend dev` or `pnpm --filter rtp-global dev`.
+> `pnpm dev` at the root starts both services on the host. Individual: `pnpm --filter vc-screener-backend dev` or `pnpm --filter rtp-global dev`.
 
-**Preview mode:** Set `ALLOW_PREVIEW_MODE=true` and `NEXT_PUBLIC_ALLOW_PREVIEW_MODE=true` in root `.env` for local dev without auth.
+**Preview mode:** Set `ALLOW_PREVIEW_MODE=true` and `NEXT_PUBLIC_ALLOW_PREVIEW_MODE=true` in root `.env` for local dev without auth — never in production.
+
+### 4. Production deploy (reference)
+
+```bash
+# EC2
+docker compose --env-file .env.production up -d --build
+
+# Vercel — deploy frontend/, set NEXT_PUBLIC_API_BASE_URL to EC2 API URL
+```
+
+See `docs/ARCHITECTURE.md` for full topology and checklist.
 
 ---
 
@@ -205,7 +229,7 @@ The sidebar shows "Startups" → `/startups` and "Recent Projects" (up to 5).
 
 ## Sample Data
 
-`backend/sample-data/sample-cap-table.csv` — canonical cap table (strict 5-column format).
+`backend/sample-data/sample-cap-table.csv` — Series A demo cap table (NexaFlow AI Inc; strict 5-column format). Walkthrough: `backend/sample-data/DEMO.md`.
 
 `backend/sample-data/sample-entity-roster.csv` — flat entity list for roster screening mode.
 
@@ -255,8 +279,11 @@ pnpm --filter rtp-global run dev
 pnpm --filter rtp-global run build
 pnpm --filter rtp-global run lint
 
-# Watchman (Docker)
-docker run --rm -p 8084:8084 moov/watchman:static
+# Watchman (local dev)
+docker compose -f docker-compose.dev.yml up
+
+# Production stack (EC2)
+docker compose --env-file .env.production up -d --build
 ```
 
 ## TypeScript / Lint Notes

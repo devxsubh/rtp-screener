@@ -310,7 +310,9 @@ export function useAssistantChat({
     );
 
     function stripClientOnlyFields(next: RtpMessage[]): RtpMessage[] {
-        return next.map(({ csvContent: _csv, ...rest }) => rest);
+        return next.map(
+            ({ csvContent: _csv, screeningResult: _sr, ...rest }) => rest,
+        );
     }
 
     // Transient placeholder events (tool_call_start, thinking) fill the
@@ -418,6 +420,11 @@ export function useAssistantChat({
             csvFilenameRef.current = csvAttachment?.filename ?? "cap-table.csv";
         }
 
+        if (message.screeningResult) {
+            setScreeningResult(message.screeningResult);
+            screeningResultRef.current = message.screeningResult;
+        }
+
         const lastMessage = messages[messages.length - 1];
         const isMessageAlreadyAdded =
             lastMessage &&
@@ -470,7 +477,8 @@ export function useAssistantChat({
                 chat_id: chatId,
                 project_id: projectId,
                 csvContent: message.csvContent ?? csvRef.current,
-                screeningResult: screeningResultRef.current,
+                screeningResult:
+                    message.screeningResult ?? screeningResultRef.current,
                 displayed_doc: displayedDoc
                     ? {
                           filename: displayedDoc.filename,

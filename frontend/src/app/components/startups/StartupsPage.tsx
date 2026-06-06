@@ -382,6 +382,11 @@ export function StartupsPage() {
                                             >
                                                 <span className="text-sm text-gray-800 truncate block">
                                                     {s.name}
+                                                    {s.isSample ? (
+                                                        <span className="ml-1.5 text-[10px] font-medium uppercase tracking-wide text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                                            Sample
+                                                        </span>
+                                                    ) : null}
                                                 </span>
                                             </div>
                                             <div
@@ -436,18 +441,25 @@ export function StartupsPage() {
                                                     e.stopPropagation()
                                                 }
                                             >
-                                                <button
-                                                    type="button"
-                                                    onClick={() => void handleRescreen(s.id)}
-                                                    disabled={isRescreening || rescreeningAll}
-                                                    title="Re-screen"
-                                                    className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30 transition-colors"
-                                                >
-                                                    <RefreshCw className={`h-3.5 w-3.5 ${isRescreening ? "animate-spin" : ""}`} />
-                                                </button>
+                                                {!s.isSample ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void handleRescreen(s.id)}
+                                                        disabled={isRescreening || rescreeningAll}
+                                                        title="Re-screen"
+                                                        className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30 transition-colors"
+                                                    >
+                                                        <RefreshCw className={`h-3.5 w-3.5 ${isRescreening ? "animate-spin" : ""}`} />
+                                                    </button>
+                                                ) : null}
                                                 <RowActions
                                                     onDelete={() =>
                                                         void handleDelete(s.id)
+                                                    }
+                                                    deleteLabel={
+                                                        s.isSample
+                                                            ? "Hide sample"
+                                                            : "Delete"
                                                     }
                                                 />
                                             </div>

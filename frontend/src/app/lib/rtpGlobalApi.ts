@@ -4,6 +4,7 @@
  */
 
 import { getAuthHeaders } from "@/lib/apiAuth";
+import { normalizeRtpMessages } from "@/lib/normalizeRtpMessages";
 import { UI_PREVIEW_MODE, PREVIEW_PROFILE } from "@/lib/uiPreview";
 import {
     listStartups,
@@ -471,7 +472,11 @@ export async function listProjectChats(projectId: string): Promise<RtpChat[]> {
 }
 
 export async function getChat(chatId: string): Promise<RtpChatDetailOut> {
-    return apiRequest<RtpChatDetailOut>(`/api/chats/${chatId}`);
+    const data = await apiRequest<RtpChatDetailOut>(`/api/chats/${chatId}`);
+    return {
+        ...data,
+        messages: normalizeRtpMessages(data.messages ?? []),
+    };
 }
 
 export async function renameChat(chatId: string, title: string): Promise<void> {

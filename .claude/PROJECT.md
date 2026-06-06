@@ -2,7 +2,7 @@
 
 > Chat-first legal/compliance platform for VC firms: screen startup cap tables against sanctions lists (Watchman / OFAC / EU), with agentic tool-calling, persistent memory, and document RAG on the roadmap.
 
-**Read first:** root `CLAUDE.md` for stack, routes, and source map.
+**Read first:** root `CLAUDE.md` for stack, routes, and source map. **Deployment:** `docs/ARCHITECTURE.md` (Vercel frontend, EC2 Docker backend + Watchman, Atlas/Upstash/R2).
 
 ---
 
@@ -103,4 +103,4 @@ Roadmap: `.claude/commands/compliance-rag-roadmap.md`.
 - **Backend:** Express + TypeScript strict; tools in `chatTools.ts`; screening orchestration in `runScreening.ts`.
 - **Frontend:** Assistant UI under `assistant/`, `workflows/`, `shared/` — preserve compliance shell features unless asked to remove.
 - **Types:** Screener domain types in `frontend/src/lib/screenerTypes.ts`; assistant types in `shared/types.ts` (`Rtp*` prefix).
-- **Env:** Watchman Docker required for real screening; `ANTHROPIC_API_KEY` required for chat + explanations.
+- **Env:** Local — Watchman via `docker-compose.dev.yml`; production — EC2 compose stack + Vercel frontend. `ANTHROPIC_API_KEY` on EC2 only.

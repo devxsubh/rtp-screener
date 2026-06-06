@@ -514,12 +514,7 @@ function TRChatInput({
                     }}
                     className="w-full resize-none text-sm bg-transparent outline-none placeholder:text-gray-400 leading-6 max-h-48 overflow-hidden border-0 p-0 pl-3 pr-2 pt-0.5"
                 />
-                <div className="flex items-center justify-between pl-1 pr-2">
-                    {USE_SERVER_CLAUDE ? (
-                        <span className="text-[11px] text-gray-400 px-2">
-                            Claude Haiku
-                        </span>
-                    ) : null}
+                <div className="flex items-center justify-end pl-1 pr-2">
                     <button
                         type="button"
                         onClick={handleAction}

@@ -8,84 +8,103 @@ export interface ColumnPreset {
     tags?: string[];
 }
 
+/** Column presets for VC sanctions / AML tabular reviews — not legal-contract extraction. */
 export const PROMPT_PRESETS: ColumnPreset[] = [
     {
-        name: "Parties",
-        matches: /\bpart(y|ies)\b/i,
-        format: "bulleted_list",
-        prompt: 'List all parties to this agreement. For each party, state their full legal name, entity type, and defined role, e.g.:\n• ABC Corp, a Delaware corporation ("Company")\n• John Smith ("Shareholder")\nOne party per bullet. No additional commentary.',
-    },
-    {
-        name: "Governing Law",
-        matches: /\bgoverning law\b|\bjurisdiction\b/i,
+        name: "Entity",
+        matches: /\bentit(y|ies)\b|\bshareholder\b|\bowner\b/i,
         format: "text",
-        prompt: 'State only the governing law of this agreement using the short-form jurisdiction name, e.g. "New York Law", "English Law", "Indian Law", "PRC Law". No other text.',
+        prompt:
+            "State the full legal name of this entity exactly as it appears in the cap table or roster.",
     },
     {
-        name: "Effective Date",
-        matches: /\beffective date\b/i,
-        format: "date",
-        prompt: 'State only the effective date of this agreement in DD Mon YYYY format, e.g. "2 Jan 2026". If not explicitly stated, write "Not specified".',
-    },
-    {
-        name: "Term",
-        matches: /\bterm\b|\bduration\b/i,
+        name: "Entity Type",
+        matches: /\btype\b|\bperson or company\b/i,
         format: "text",
-        prompt: 'State only the duration or term of this agreement in a concise form, e.g. "3 years", "24 months", "perpetual". No other text.',
+        prompt: "Is this entity a person or a company?",
     },
     {
-        name: "Termination",
-        matches: /\bterminat(e|ion|ing)\b/i,
+        name: "Role",
+        matches: /\brole\b|\bcapacity\b/i,
         format: "text",
-        prompt: "Extract the termination provisions. State who may terminate, the trigger events, required notice period, any cure period, and the key consequences of termination. Be concise.",
+        prompt:
+            "What is this entity's role (e.g. founder, angel investor, seed fund, Series A lead, SPV, LP, vendor, co-investor)?",
     },
     {
-        name: "Change of Control",
-        matches: /\bchange of control\b/i,
+        name: "Ownership %",
+        matches: /\bownership\s*%|\bownership percent|\bdirect\s*%|\bstake\b/i,
+        format: "percentage",
+        prompt:
+            "What is this entity's direct ownership percentage in the portfolio company?",
+    },
+    {
+        name: "Indirect %",
+        matches: /\bindirect\s*%|\beffective\s*%|\bindirect stake\b/i,
+        format: "percentage",
+        prompt:
+            "What is the effective indirect ownership stake in the portfolio company (%), summed across ownership paths?",
+    },
+    {
+        name: "Ownership Path",
+        matches: /\bownership path\b|\bownership chain\b|\bchain\b/i,
         format: "text",
-        prompt: "Identify any change of control provisions. Summarize the trigger events, consequences, consent requirements, and any related termination or acceleration rights. Be concise.",
+        prompt:
+            "Describe the full ownership chain from this entity up to the portfolio company, including intermediate SPVs, holdings, and trusts.",
     },
     {
-        name: "Confidentiality",
-        matches: /\bconfidential(ity)?\b|\bnon-?disclosure\b/i,
-        format: "text",
-        prompt: "Summarize the confidentiality obligations: scope of confidential information, permitted disclosures, use restrictions, duration, and key carve-outs or exceptions.",
-    },
-    {
-        name: "Assignment",
-        matches: /\bassign(ment|ability)?\b/i,
+        name: "Ultimate Owner?",
+        matches: /\bultimate owner\b|\bubo\b|\bbeneficial owner\b/i,
         format: "yes_no",
-        prompt: "Is assignment of this agreement permitted without the other party's consent?",
+        prompt: "Is this entity the ultimate beneficial owner (no further owner in the graph)?",
     },
     {
-        name: "Payment & Fees",
-        matches: /\bpayment\b|\bfees?\b/i,
+        name: "Jurisdiction",
+        matches: /\bjurisdiction\b|\bcountry\b|\bnationality\b/i,
         format: "text",
-        prompt: 'State the key payment obligations concisely: amount, timing, and currency, e.g. "USD 10,000 payable within 30 days of invoice". Note any late payment consequences.',
+        prompt:
+            "Country or jurisdiction of incorporation or residence for this entity, if known from the document.",
     },
     {
-        name: "Amendment",
-        matches: /\bamendment\b|\bvariation\b/i,
+        name: "Sanctions Match",
+        matches: /\bsanctions match\b|\blist match\b|\bwatchman\b/i,
         format: "text",
-        prompt: "Summarize the amendment provisions: how amendments may be made, who must consent, and any formality requirements such as writing or signature.",
+        prompt:
+            "What is the closest match found on sanctions lists (OFAC SDN, EU Consolidated, etc.) for this entity? Write 'No match' if none.",
     },
     {
-        name: "Indemnity",
-        matches: /\bindemni(ty|ties|fication)\b/i,
+        name: "Match Score",
+        matches: /\bmatch score\b|\bconfidence\b|\bscore\b/i,
+        format: "percentage",
+        prompt: "What is the match confidence score (0–100%)? Write 'N/A' if no match.",
+    },
+    {
+        name: "Source List",
+        matches: /\bsource list\b|\bsanctions list\b|\bofac\b/i,
         format: "text",
-        prompt: "Summarize the indemnity provisions: who indemnifies whom, the scope of indemnified losses, any liability caps or exclusions, and key claims procedures.",
+        prompt:
+            "Which sanctions list produced the highest-scoring match (e.g. OFAC SDN, EU Consolidated)?",
     },
     {
-        name: "Warranties",
-        matches: /\bwarrant(y|ies|ing)\b|\brepresentations?\b/i,
-        format: "text",
-        prompt: "Identify and describe key representations and warranties provided by any party, including the scope of such assurances and any specific time periods or conditions applicable to them. In particular highlight any non-standard warranties.",
+        name: "Risk",
+        matches: /\brisk\b|\brisk level\b|\bclassification\b/i,
+        format: "tag",
+        tags: ["Clear", "Review", "Flagged"],
+        prompt:
+            "Risk classification based on screening: Clear, Review, or Flagged. Never conclude guilt — decision support only.",
     },
     {
-        name: "Force Majeure",
-        matches: /\bforce majeure\b/i,
+        name: "Enhanced DD?",
+        matches: /\benhanced dd\b|\bdue diligence\b|\bescalat(e|ion)\b/i,
         format: "yes_no",
-        prompt: "Does this agreement contain a force majeure clause?",
+        prompt:
+            "Does this entity require enhanced due diligence or compliance escalation based on the screening result?",
+    },
+    {
+        name: "Status",
+        matches: /\bstatus\b|\bsign-?off\b|\bhuman review\b/i,
+        format: "text",
+        prompt:
+            "Leave blank — for the compliance officer to complete after human review.",
     },
 ];
 

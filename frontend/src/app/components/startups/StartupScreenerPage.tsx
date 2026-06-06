@@ -37,6 +37,7 @@ import {
     type ScreenPurpose,
 } from "@/lib/screenerInitialPrompt";
 import { ResizeDivider } from "@/app/components/shared/ResizeDivider";
+import { useIsMobile } from "@/app/hooks/useIsMobile";
 
 const CHAT_PANEL_MIN = 320;
 const ANALYSIS_PANEL_MIN = 400;
@@ -83,8 +84,10 @@ function StatusPill({ result }: { result: StartupRecord["lastScreeningResult"] }
 export function StartupScreenerPage({ startupId }: Props) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const isMobile = useIsMobile();
     const splitRef = useRef<HTMLDivElement>(null);
     const [chatPanelWidth, setChatPanelWidth] = useState(CHAT_PANEL_DEFAULT);
+    const [mobilePane, setMobilePane] = useState<"chat" | "analysis">("chat");
     const { setSidebarOpen } = useSidebar();
     const [startup, setStartup] = useState<StartupRecord | null>(null);
     const [csvList, setCsvList] = useState<CsvRecord[]>([]);
@@ -601,10 +604,38 @@ export function StartupScreenerPage({ startupId }: Props) {
                 startupId={startupId}
                 refreshKey={deltaRefreshKey}
             />
-            <div ref={splitRef} className="flex-1 min-h-0 flex">
+            {isMobile && (
+                <div className="shrink-0 flex border-b border-gray-200 bg-gray-50 md:hidden">
+                    <button
+                        type="button"
+                        onClick={() => setMobilePane("chat")}
+                        className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+                            mobilePane === "chat"
+                                ? "text-gray-900 border-b-2 border-gray-900 bg-white"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        Chat
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setMobilePane("analysis")}
+                        className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+                            mobilePane === "analysis"
+                                ? "text-gray-900 border-b-2 border-gray-900 bg-white"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        Analysis
+                    </button>
+                </div>
+            )}
+            <div ref={splitRef} className="flex-1 min-h-0 flex flex-col md:flex-row">
                 <section
-                    style={{ width: chatPanelWidth }}
-                    className="shrink-0 min-h-0 flex flex-col"
+                    style={isMobile ? undefined : { width: chatPanelWidth }}
+                    className={`shrink-0 min-h-0 flex flex-col w-full md:w-auto flex-1 md:flex-none ${
+                        isMobile && mobilePane !== "chat" ? "hidden" : ""
+                    }`}
                 >
                     <StartupChatPanel
                         messages={messages}
@@ -616,9 +647,15 @@ export function StartupScreenerPage({ startupId }: Props) {
                     />
                 </section>
 
-                <ResizeDivider onDrag={onChatPanelDividerDrag} />
+                <div className="hidden md:contents">
+                    <ResizeDivider onDrag={onChatPanelDividerDrag} />
+                </div>
 
-                <section className="flex-1 min-w-0 min-h-0 flex flex-col">
+                <section
+                    className={`flex-1 min-w-0 min-h-0 flex flex-col ${
+                        isMobile && mobilePane !== "analysis" ? "hidden" : ""
+                    }`}
+                >
                     <div className="flex-1 min-h-0 flex flex-col">
                         <StartupAnalysisDock
                             screeningResult={displayResult}

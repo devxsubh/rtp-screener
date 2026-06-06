@@ -38,6 +38,10 @@ import {
     insertStartupMention,
 } from "./StartupMentionMenu";
 import type { RtpDocument, RtpMessage } from "../shared/types";
+import {
+    ASSISTANT_SAMPLE_PROMPTS,
+    type AssistantSamplePrompt,
+} from "@/lib/assistantSamplePrompts";
 
 export interface ChatInputHandle {
     addDoc: (doc: RtpDocument) => void;
@@ -53,6 +57,8 @@ interface Props {
     projectName?: string;
     projectCmNumber?: string | null;
     startupId?: string;
+    showSamplePrompts?: boolean;
+    samplePrompts?: AssistantSamplePrompt[];
 }
 
 export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
@@ -66,6 +72,8 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
         projectName,
         projectCmNumber,
         startupId,
+        showSamplePrompts = true,
+        samplePrompts = ASSISTANT_SAMPLE_PROMPTS,
     }: Props,
     ref,
 ) {
@@ -211,6 +219,17 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
             e.preventDefault();
             void handleSubmit();
         }
+    };
+
+    const applySamplePrompt = (prompt: string) => {
+        setValue(prompt);
+        requestAnimationFrame(() => {
+            const el = textareaRef.current;
+            if (!el) return;
+            el.focus();
+            el.style.height = "auto";
+            el.style.height = `${el.scrollHeight}px`;
+        });
     };
 
     return (
@@ -373,11 +392,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
                         </div>
 
                         <div className="flex items-center gap-1">
-                            {USE_SERVER_CLAUDE ? (
-                                <span className="hidden sm:inline text-[11px] text-gray-400 px-2">
-                                    Claude Haiku
-                                </span>
-                            ) : (
+                            {!USE_SERVER_CLAUDE && (
                                 <ModelToggle
                                     value={model}
                                     onChange={setModel}
@@ -408,6 +423,26 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
                         </div>
                     </div>
                 </div>
+
+                {showSamplePrompts &&
+                    !isLoading &&
+                    !value.trim() &&
+                    samplePrompts.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3 justify-center px-1">
+                            {samplePrompts.map((sample) => (
+                                <button
+                                    key={sample.label}
+                                    type="button"
+                                    onClick={() =>
+                                        applySamplePrompt(sample.prompt)
+                                    }
+                                    className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                                >
+                                    {sample.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
             </div>
 
             <AddDocumentsModal

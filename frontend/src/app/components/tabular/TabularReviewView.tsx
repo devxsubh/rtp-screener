@@ -572,148 +572,175 @@ export function TRView({ reviewId, projectId }: Props) {
         <div className="flex h-full overflow-hidden bg-white">
             <div className="flex flex-1 flex-col overflow-hidden">
                 {/* Header */}
-                <div className="mb-1 bg-white px-4 py-3 md:px-10 flex items-start justify-between shrink-0 gap-4">
-                    <div className="flex items-center gap-1.5 text-2xl font-medium font-serif">
-                        {projectId && (
+                <div className="shrink-0 border-b border-gray-100 bg-white">
+                    <nav
+                        aria-label="Breadcrumb"
+                        className="flex items-center gap-1 overflow-x-auto px-4 pt-3 md:px-10 text-xs text-gray-500 whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    >
+                        {projectId ? (
                             <>
                                 <button
+                                    type="button"
                                     onClick={() => router.push("/startups")}
-                                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                                    className="shrink-0 hover:text-gray-800 transition-colors"
                                 >
                                     Projects
                                 </button>
-                                <span className="text-gray-300">›</span>
+                                <span className="shrink-0 text-gray-300">›</span>
                                 <button
+                                    type="button"
                                     onClick={() =>
                                         router.push(`/startups/${projectId}`)
                                     }
-                                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                                    className="shrink-0 max-w-[200px] truncate hover:text-gray-800 transition-colors"
+                                    title={project?.name}
                                 >
                                     {loading ? (
-                                        <div className="h-6 w-32 rounded bg-gray-100 animate-pulse" />
+                                        <span className="inline-block h-3 w-28 rounded bg-gray-100 animate-pulse" />
                                     ) : (
                                         <>
                                             {project?.name ?? ""}
-                                            {project?.cm_number && (
-                                                <span className="ml-1 text-gray-400">
+                                            {project?.cm_number ? (
+                                                <span className="text-gray-400">
+                                                    {" "}
                                                     (#{project.cm_number})
                                                 </span>
-                                            )}
+                                            ) : null}
                                         </>
                                     )}
                                 </button>
-                                <span className="text-gray-300">›</span>
+                                <span className="shrink-0 text-gray-300">›</span>
                                 <button
+                                    type="button"
                                     onClick={() =>
                                         router.push(
                                             `/startups/${projectId}?tab=reviews`,
                                         )
                                     }
-                                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                                    className="shrink-0 hover:text-gray-800 transition-colors"
                                 >
                                     Tabular Reviews
                                 </button>
                             </>
-                        )}
-                        {!projectId && (
+                        ) : (
                             <button
+                                type="button"
                                 onClick={() => router.push("/tabular-reviews")}
-                                className="text-gray-500 hover:text-gray-700 transition-colors"
+                                className="shrink-0 hover:text-gray-800 transition-colors"
                             >
                                 Tabular Reviews
                             </button>
                         )}
-                        <span className="text-gray-300">›</span>
-                        {loading ? (
-                            <div className="h-6 w-40 rounded bg-gray-100 animate-pulse" />
-                        ) : (
-                            <RenameableTitle
-                                value={review?.title || "Untitled Review"}
-                                onCommit={handleTitleCommit}
-                            />
-                        )}
-                    </div>
-                    {!loading && (
-                        <div className="flex items-center gap-2">
-                            <HeaderSearchBtn value={search} onChange={setSearch} placeholder="Search documents…" />
-                            {!projectId && (
-                                <button
-                                    onClick={() => setPeopleModalOpen(true)}
-                                    disabled={loading}
-                                    className={`flex h-8 w-8 items-center justify-center text-sm transition-colors ${
-                                        loading
-                                            ? "text-gray-300 cursor-default"
-                                            : "text-gray-500 hover:text-gray-900 cursor-pointer"
-                                    }`}
-                                    title="People with access"
-                                    aria-label="People with access"
+                    </nav>
+
+                    <div className="flex items-center justify-between gap-4 px-4 pb-3 pt-1 md:px-10 min-h-11">
+                        <div className="min-w-0 flex-1">
+                            {loading ? (
+                                <div className="h-7 w-64 max-w-full rounded bg-gray-100 animate-pulse" />
+                            ) : (
+                                <h1
+                                    className="text-xl md:text-2xl font-medium font-serif text-gray-900 truncate"
+                                    title={review?.title || "Untitled Review"}
                                 >
-                                    <Users className="h-4 w-4" />
-                                </button>
+                                    <RenameableTitle
+                                        value={
+                                            review?.title || "Untitled Review"
+                                        }
+                                        onCommit={handleTitleCommit}
+                                    />
+                                </h1>
                             )}
-                            <button
-                                onClick={() =>
-                                    exportTabularReviewToExcel({
-                                        reviewTitle: review?.title || "Tabular Review",
-                                        columns,
-                                        documents,
-                                        cells,
-                                    })
-                                }
-                                disabled={columns.length === 0 || documents.length === 0}
-                                title="Export to Excel"
-                                className={`flex h-8 items-center justify-center gap-1.5 px-3 text-sm transition-colors ${
-                                    columns.length === 0 || documents.length === 0
-                                        ? "text-gray-300 cursor-default"
-                                        : "text-gray-700 hover:text-gray-900 cursor-pointer"
-                                }`}
-                            >
-                                <Download className="h-4 w-4" />
-                                Export
-                            </button>
-                            <button
-                                onClick={handleGenerate}
-                                disabled={
-                                    generating ||
-                                    columns.length === 0 ||
-                                    documents.length === 0 ||
-                                    savingColumnsConfig ||
-                                    (!isScreeningBacked &&
-                                        review?.review_kind === "standard")
-                                }
-                                title={
-                                    isScreeningBacked
-                                        ? "Reload grid from latest startup screening data"
-                                        : review?.review_kind === "standard"
-                                          ? "AI column extraction for document reviews is coming soon — use the Assistant panel"
-                                          : undefined
-                                }
-                                className={`flex h-8 items-center justify-center gap-1.5 px-3 text-sm transition-colors ${
-                                    generating ||
-                                    columns.length === 0 ||
-                                    documents.length === 0 ||
-                                    savingColumnsConfig ||
-                                    (!isScreeningBacked &&
-                                        review?.review_kind === "standard")
-                                        ? "text-gray-300 cursor-default"
-                                        : "text-gray-700 hover:text-gray-900 cursor-pointer"
-                                }`}
-                            >
-                                {generating ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : isScreeningBacked ? (
-                                    <RefreshCw className="h-4 w-4" />
-                                ) : (
-                                    <Play className="h-4 w-4" />
-                                )}
-                                {generating
-                                    ? "Running…"
-                                    : isScreeningBacked
-                                      ? "Refresh"
-                                      : "Run"}
-                            </button>
                         </div>
-                    )}
+                        {!loading ? (
+                            <div className="flex shrink-0 items-center gap-2">
+                                <HeaderSearchBtn
+                                    value={search}
+                                    onChange={setSearch}
+                                    placeholder="Search documents…"
+                                />
+                                {!projectId ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setPeopleModalOpen(true)}
+                                        className="flex h-8 w-8 items-center justify-center text-sm text-gray-500 transition-colors hover:text-gray-900 cursor-pointer"
+                                        title="People with access"
+                                        aria-label="People with access"
+                                    >
+                                        <Users className="h-4 w-4" />
+                                    </button>
+                                ) : null}
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        exportTabularReviewToExcel({
+                                            reviewTitle:
+                                                review?.title ||
+                                                "Tabular Review",
+                                            columns,
+                                            documents,
+                                            cells,
+                                        })
+                                    }
+                                    disabled={
+                                        columns.length === 0 ||
+                                        documents.length === 0
+                                    }
+                                    title="Export to Excel"
+                                    className={`flex h-8 items-center justify-center gap-1.5 px-3 text-sm transition-colors ${
+                                        columns.length === 0 ||
+                                        documents.length === 0
+                                            ? "text-gray-300 cursor-default"
+                                            : "text-gray-700 hover:text-gray-900 cursor-pointer"
+                                    }`}
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Export
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleGenerate}
+                                    disabled={
+                                        generating ||
+                                        columns.length === 0 ||
+                                        documents.length === 0 ||
+                                        savingColumnsConfig ||
+                                        (!isScreeningBacked &&
+                                            review?.review_kind === "standard")
+                                    }
+                                    title={
+                                        isScreeningBacked
+                                            ? "Reload grid from latest startup screening data"
+                                            : review?.review_kind === "standard"
+                                              ? "AI column extraction for document reviews is coming soon — use the Assistant panel"
+                                              : undefined
+                                    }
+                                    className={`flex h-8 items-center justify-center gap-1.5 px-3 text-sm transition-colors ${
+                                        generating ||
+                                        columns.length === 0 ||
+                                        documents.length === 0 ||
+                                        savingColumnsConfig ||
+                                        (!isScreeningBacked &&
+                                            review?.review_kind === "standard")
+                                            ? "text-gray-300 cursor-default"
+                                            : "text-gray-700 hover:text-gray-900 cursor-pointer"
+                                    }`}
+                                >
+                                    {generating ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : isScreeningBacked ? (
+                                        <RefreshCw className="h-4 w-4" />
+                                    ) : (
+                                        <Play className="h-4 w-4" />
+                                    )}
+                                    {generating
+                                        ? "Running…"
+                                        : isScreeningBacked
+                                          ? "Refresh"
+                                          : "Run"}
+                                </button>
+                            </div>
+                        ) : null}
+                    </div>
                 </div>
 
                 {!loading && review?.review_kind === "portfolio_monitoring" && (

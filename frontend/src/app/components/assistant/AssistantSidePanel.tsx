@@ -5,6 +5,7 @@ import { ShieldAlert, X } from "lucide-react";
 import { DocPanel, type DocPanelMode } from "../shared/DocPanel";
 import { ScreeningResultsContent } from "../screen/ScreeningResultsPanel";
 import type { ScreeningResult } from "@/lib/screenerTypes";
+import { useIsMobile } from "@/app/hooks/useIsMobile";
 import type {
     RtpCitationAnnotation,
     RtpEditAnnotation,
@@ -131,6 +132,7 @@ export function AssistantSidePanel({
     screeningHandoffFilename,
     onScreeningContinueInStartup,
 }: Props) {
+    const isMobile = useIsMobile();
     const panelRef = useRef<HTMLDivElement>(null);
     const [panelWidth, setPanelWidth] = useState(() => {
         if (typeof window === "undefined") return 600;
@@ -145,14 +147,16 @@ export function AssistantSidePanel({
             : 800);
 
     useEffect(() => {
+        if (isMobile) return;
         setPanelWidth((w) => Math.min(w, effectiveMaxWidth));
-    }, [effectiveMaxWidth]);
+    }, [effectiveMaxWidth, isMobile]);
 
     const dragStartX = useRef<number>(0);
     const dragStartWidth = useRef<number>(0);
 
     const onMouseDown = useCallback(
         (e: React.MouseEvent) => {
+            if (isMobile) return;
             e.preventDefault();
             dragStartX.current = e.clientX;
             dragStartWidth.current =
@@ -179,27 +183,33 @@ export function AssistantSidePanel({
             document.body.style.cursor = "col-resize";
             document.body.style.userSelect = "none";
         },
-        [panelWidth, effectiveMaxWidth],
+        [panelWidth, effectiveMaxWidth, isMobile],
     );
 
     const active = tabs.find((t) => t.id === activeTabId) ?? tabs[0] ?? null;
     if (!active) return null;
 
+    const resolvedWidth = isMobile
+        ? "100%"
+        : Math.min(panelWidth, effectiveMaxWidth);
+
     return (
         <div
             ref={panelRef}
             className="flex h-full w-full shrink-0 flex-col bg-white relative border-l border-gray-200 shadow-[-4px_0_12px_rgba(0,0,0,0.02)]"
-            style={{ width: Math.min(panelWidth, effectiveMaxWidth) }}
+            style={{ width: resolvedWidth, maxWidth: isMobile ? "100%" : resolvedWidth }}
         >
-            {/* Drag handle */}
-            <div
-                onMouseDown={onMouseDown}
-                className="absolute left-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400/80 active:bg-blue-500 transition-colors z-10 group"
-                style={{ marginLeft: -3 }}
-                title="Drag to resize"
-            >
-                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gray-200 group-hover:bg-blue-400" />
-            </div>
+            {/* Drag handle — desktop only */}
+            {!isMobile && (
+                <div
+                    onMouseDown={onMouseDown}
+                    className="absolute left-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400/80 active:bg-blue-500 transition-colors z-10 group"
+                    style={{ marginLeft: -3 }}
+                    title="Drag to resize"
+                >
+                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gray-200 group-hover:bg-blue-400" />
+                </div>
+            )}
 
             {/* Tab strip (Chrome-style) */}
             <div className="flex items-end gap-1 pr-2 pt-2 bg-gray-100">

@@ -37,6 +37,7 @@ export interface StartupRecord {
   lastVendorScreenedAt?: string | null;
   portfolioReviewStatus?: string;
   portfolioReviewNotes?: string | null;
+  isSample?: boolean;
 }
 
 export interface ScreeningDelta {

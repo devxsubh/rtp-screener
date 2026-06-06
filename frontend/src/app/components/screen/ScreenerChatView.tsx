@@ -9,6 +9,7 @@ import { ScreeningResultsPanel } from "./ScreeningResultsPanel";
 import type { ScreenerMessage } from "./chatTypes";
 import type { ScreeningResult } from "@/lib/screenerTypes";
 import { shouldShowMessageOptions } from "@/lib/parseMessageOptions";
+import { useIsMobile } from "@/app/hooks/useIsMobile";
 
 interface Props {
   messages: ScreenerMessage[];
@@ -29,6 +30,7 @@ export function ScreenerChatView({
   onNewChat,
   startupId,
 }: Props) {
+  const isMobile = useIsMobile();
   const [resultsOpen, setResultsOpen] = useState(!!screeningResult);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [inputHeight, setInputHeight] = useState(120);
@@ -43,6 +45,17 @@ export function ScreenerChatView({
   useEffect(() => {
     if (screeningResult) setResultsOpen(true);
   }, [screeningResult]);
+
+  useEffect(() => {
+    if (isMobile && resultsOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobile, resultsOpen]);
 
   useEffect(() => {
     const el = chatInputRef.current;
@@ -98,9 +111,13 @@ export function ScreenerChatView({
   const lastAssistantIndex = messages.map((m) => m.role).lastIndexOf("assistant");
 
   return (
-    <div className="h-full w-full flex relative">
-      <div className="flex flex-col h-full flex-1 relative min-w-0">
-        <div className="absolute top-3 right-4 z-20 flex items-center gap-2">
+    <div className="h-full w-full flex relative overflow-hidden">
+      <div
+        className={`flex flex-col h-full flex-1 relative min-w-0 ${
+          isMobile && resultsOpen ? "hidden" : ""
+        }`}
+      >
+        <div className="absolute top-3 right-3 sm:right-4 z-20 flex items-center gap-1.5 sm:gap-2">
           {screeningResult && (
             <button
               type="button"
@@ -126,7 +143,7 @@ export function ScreenerChatView({
           className="flex-1 w-full overflow-y-auto"
           style={{ scrollbarGutter: "stable both-edges" }}
         >
-          <div className="w-full max-w-4xl mx-auto pb-32 px-6 md:px-8 pt-4 md:pt-6 min-h-full flex flex-col relative">
+          <div className="w-full max-w-4xl mx-auto pb-32 px-4 sm:px-6 md:px-8 pt-4 md:pt-6 min-h-full flex flex-col relative">
             <div
               className="space-y-6 transition-opacity duration-150"
               style={{ opacity: messagesVisible ? 1 : 0 }}
@@ -207,11 +224,19 @@ export function ScreenerChatView({
       </div>
 
       {resultsOpen && screeningResult && (
-        <ScreeningResultsPanel
-          data={screeningResult}
-          onClose={() => setResultsOpen(false)}
-          startupId={startupId}
-        />
+        <div
+          className={`${
+            isMobile
+              ? "fixed inset-0 z-40 w-full h-full bg-white"
+              : "h-full shrink-0"
+          }`}
+        >
+          <ScreeningResultsPanel
+            data={screeningResult}
+            onClose={() => setResultsOpen(false)}
+            startupId={startupId}
+          />
+        </div>
       )}
     </div>
   );

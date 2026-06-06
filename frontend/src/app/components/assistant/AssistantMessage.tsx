@@ -32,7 +32,27 @@ function toolCallLabel(name: string): string {
     if (name === "list_workflows") return "Loading workflows...";
     if (name === "web_search") return "Searching the web…";
     if (name === "list_documents") return "Loading documents...";
+    if (name === "screen_cap_table") return "Screening cap table…";
+    if (name === "query_screening_data") return "Querying screening data…";
+    if (name === "ic_memo") return "Generating IC memo…";
     return name ? `Running ${name}...` : "Working...";
+}
+
+function toolCallDoneLabel(name: string): string {
+    if (name === "generate_docx") return "Created document";
+    if (name === "edit_document") return "Edited document";
+    if (name === "read_document") return "Read document";
+    if (name === "fetch_documents") return "Read documents";
+    if (name === "find_in_document") return "Searched document";
+    if (name === "replicate_document") return "Copied document";
+    if (name === "read_workflow") return "Loaded workflow";
+    if (name === "list_workflows") return "Loaded workflows";
+    if (name === "web_search") return "Searched the web";
+    if (name === "list_documents") return "Loaded documents";
+    if (name === "screen_cap_table") return "Screened cap table";
+    if (name === "query_screening_data") return "Queried screening data";
+    if (name === "ic_memo") return "Generated IC memo";
+    return name ? `Ran ${name}` : "Completed";
 }
 
 /**
@@ -1172,7 +1192,7 @@ interface Props {
 }
 
 export function AssistantMessage({
-    content: _content,
+    content,
     events,
     isStreaming = false,
     isError = false,
@@ -1293,6 +1313,12 @@ export function AssistantMessage({
           )
         : -1;
 
+    const fallbackContent =
+        lastContentIdx < 0 && content?.trim() ? content.trim() : "";
+    const fallbackProcessed = fallbackContent
+        ? preprocessCitations(fallbackContent, annotations, citationsList)
+        : "";
+
     // Walk events in chronological order and group consecutive non-content
     // events into their own PreResponseWrapper. Content events render
     // between wrappers, so reasoning/tool chatter that arrives after the
@@ -1368,6 +1394,7 @@ export function AssistantMessage({
             );
         }
         if (event.type === "tool_call_start") {
+            const toolStreaming = !!event.isStreaming && isStreaming;
             return (
                 <div
                     key={globalIdx}
@@ -1376,9 +1403,15 @@ export function AssistantMessage({
                     {showConnector && (
                         <div className="absolute bottom-0 w-[1px] bg-gray-300 top-[13px] left-[2.5px] h-[calc(100%+11px)]" />
                     )}
-                    <div className="w-1.5 h-1.5 rounded-full border border-gray-400 border-t-transparent animate-spin shrink-0" />
+                    {toolStreaming ? (
+                        <div className="w-1.5 h-1.5 rounded-full border border-gray-400 border-t-transparent animate-spin shrink-0" />
+                    ) : (
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                    )}
                     <span className="font-medium ml-2">
-                        {toolCallLabel(event.name)}
+                        {toolStreaming
+                            ? toolCallLabel(event.name)
+                            : toolCallDoneLabel(event.name)}
                     </span>
                 </div>
             );
@@ -1647,6 +1680,13 @@ export function AssistantMessage({
                                 );
                             })()}
                     </div>
+                ) : fallbackProcessed ? (
+                    <MarkdownContent
+                        text={fallbackProcessed}
+                        citationsList={citationsList}
+                        onCitationClick={onCitationClick}
+                        divRef={contentDivRef}
+                    />
                 ) : null}
 
                 {isError && (
