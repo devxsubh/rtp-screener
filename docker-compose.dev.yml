@@ -1,0 +1,18 @@
+# Local dev — Watchman (sanctions lists) only.
+# Backend + frontend run on the host via `pnpm dev` (see root .env).
+#
+#   docker compose -f docker-compose.dev.yml up
+#
+# Wait ~30–60 s for SDN/EU lists to load, then screening works at localhost:8084.
+
+services:
+  watchman:
+    image: moov/watchman:static
+    ports:
+      - "8084:8084"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8084/ping"]
+      interval: 20s
+      timeout: 10s
+      start_period: 90s
+      retries: 5
