@@ -468,8 +468,17 @@ export function useAssistantChat({
             const streamPayload = {
                 messages: apiMessages,
                 chat_id: chatId,
+                project_id: projectId,
                 csvContent: message.csvContent ?? csvRef.current,
                 screeningResult: screeningResultRef.current,
+                displayed_doc: displayedDoc
+                    ? {
+                          filename: displayedDoc.filename,
+                          document_id: displayedDoc.documentId,
+                      }
+                    : undefined,
+                attached_documents:
+                    attachedDocs.length > 0 ? attachedDocs : undefined,
                 signal: controller.signal,
             };
 
@@ -477,14 +486,6 @@ export function useAssistantChat({
                 ? streamProjectChat({
                       projectId,
                       ...streamPayload,
-                      displayed_doc: displayedDoc
-                          ? {
-                                filename: displayedDoc.filename,
-                                document_id: displayedDoc.documentId,
-                            }
-                          : undefined,
-                      attached_documents:
-                          attachedDocs.length > 0 ? attachedDocs : undefined,
                   })
                 : streamChat(streamPayload));
 

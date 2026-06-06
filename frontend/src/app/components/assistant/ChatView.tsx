@@ -28,6 +28,7 @@ import {
 import { useSidebar } from "@/app/contexts/SidebarContext";
 import { invalidateDocxBytes } from "@/app/hooks/useFetchDocxBytes";
 import { latestScreeningFromMessages } from "@/lib/assistantScreening";
+import { shouldShowMessageOptions } from "@/lib/parseMessageOptions";
 
 /** Chat column never shrinks below this — keeps messages and input readable. */
 const MIN_CHAT_WIDTH = 380;
@@ -706,6 +707,17 @@ export function ChatView({
                                                 resolvedEditStatuses={
                                                     resolvedEditStatuses
                                                 }
+                                                showOptionChips={shouldShowMessageOptions(
+                                                    i,
+                                                    messages,
+                                                    isResponseLoading,
+                                                )}
+                                                onOptionSelect={(value) => {
+                                                    void handleChat({
+                                                        role: "user",
+                                                        content: value,
+                                                    });
+                                                }}
                                             />
                                         )}
                                     </div>

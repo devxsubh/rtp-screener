@@ -8,6 +8,8 @@ import { PreResponseWrapper } from "@/app/components/shared/PreResponseWrapper";
 import { IcMemoDownloadCard } from "@/app/components/startups/IcMemoDownloadCard";
 import { TOOL_LABELS } from "@/app/lib/screenerApi";
 import { ScreeningProgressSteps } from "./ScreeningProgressSteps";
+import { parseMessageOptions } from "@/lib/parseMessageOptions";
+import { MessageOptionChips } from "@/app/components/shared/MessageOptionChips";
 import type { AssistantEvent } from "./chatTypes";
 
 function toolCallLabel(name: string): string {
@@ -56,6 +58,8 @@ interface Props {
   isError?: boolean;
   minHeight?: string;
   startupId?: string;
+  showOptionChips?: boolean;
+  onOptionSelect?: (value: string) => void;
 }
 
 export function ScreenerAssistantMessage({
@@ -65,6 +69,8 @@ export function ScreenerAssistantMessage({
   isError,
   minHeight = "0px",
   startupId,
+  showOptionChips = false,
+  onOptionSelect,
 }: Props) {
   const status: StatusState = isError ? "error" : isStreaming ? "active" : null;
 
@@ -168,6 +174,44 @@ export function ScreenerAssistantMessage({
 
   const displayContent = content || (isError ? "" : "");
 
+  const lastContentIndex =
+    events?.reduce(
+      (last, event, idx) => (event.type === "content" ? idx : last),
+      -1,
+    ) ?? -1;
+
+  const lastContentText =
+    lastContentIndex >= 0 && events?.[lastContentIndex]?.type === "content"
+      ? events[lastContentIndex].text
+      : displayContent;
+
+  const messageOptions =
+    showOptionChips && !isStreaming && !isError
+      ? parseMessageOptions(lastContentText)
+      : null;
+
+  function renderContentText(text: string, index: number) {
+    const markdownText =
+      index === lastContentIndex && messageOptions
+        ? messageOptions.displayText
+        : text;
+
+    return (
+      <>
+        <ChatMarkdown text={markdownText} className="mb-4" />
+        {index === lastContentIndex &&
+          messageOptions &&
+          onOptionSelect && (
+            <MessageOptionChips
+              options={messageOptions.options}
+              onSelect={onOptionSelect}
+              disabled={isStreaming}
+            />
+          )}
+      </>
+    );
+  }
+
   return (
     <div style={{ minHeight }}>
       <ResponseStatus status={status} />
@@ -178,7 +222,7 @@ export function ScreenerAssistantMessage({
               if (g.kind === "content") {
                 return (
                   <div key={`c-${g.index}`}>
-                    <ChatMarkdown text={g.event.text} className="mb-4" />
+                    {renderContentText(g.event.text, g.index)}
                   </div>
                 );
               }
@@ -226,7 +270,9 @@ export function ScreenerAssistantMessage({
             })}
           </div>
         ) : (
-          <ChatMarkdown text={displayContent} className="mb-4" />
+          <>
+            {renderContentText(displayContent, lastContentIndex)}
+          </>
         )}
         {isError && (
           <p className="text-sm text-red-600 mt-2">{displayContent}</p>

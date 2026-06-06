@@ -4,15 +4,17 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, Check } from "lucide-react";
+import { LogOut, Check, Compass } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/contexts/UserProfileContext";
+import { useOnboardingTour } from "@/app/contexts/OnboardingTourContext";
 import { deleteAccount } from "@/app/lib/rtpGlobalApi";
 
 export default function AccountPage() {
     const router = useRouter();
     const { user, signOut } = useAuth();
     const { profile, updateDisplayName, updateOrganisation } = useUserProfile();
+    const { startTour } = useOnboardingTour();
     const [displayName, setDisplayName] = useState("");
     const [isSavingName, setIsSavingName] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -168,14 +170,24 @@ export default function AccountPage() {
                 <h2 className="text-2xl font-medium font-serif mb-4">
                     Actions
                 </h2>
-                <Button
-                    variant="outline"
-                    onClick={handleLogout}
-                    className="w-full sm:w-auto"
-                >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                        variant="outline"
+                        onClick={() => startTour({ force: true })}
+                        className="w-full sm:w-auto"
+                    >
+                        <Compass className="h-4 w-4 mr-2" />
+                        Restart product tour
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={handleLogout}
+                        className="w-full sm:w-auto"
+                    >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sign Out
+                    </Button>
+                </div>
             </div>
 
             {/* Danger Zone */}

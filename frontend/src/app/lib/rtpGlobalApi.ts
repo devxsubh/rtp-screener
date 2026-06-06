@@ -509,6 +509,8 @@ export async function streamChat(payload: {
     model?: string;
     csvContent?: string | null;
     screeningResult?: unknown;
+    displayed_doc?: { filename: string; document_id: string };
+    attached_documents?: { filename: string; document_id: string }[];
     signal?: AbortSignal;
 }): Promise<Response> {
     const { signal, ...body } = payload;
@@ -538,6 +540,8 @@ export async function streamProjectChat(payload: {
     messages: StreamChatMessage[];
     chat_id?: string;
     model?: string;
+    csvContent?: string | null;
+    screeningResult?: unknown;
     displayed_doc?: { filename: string; document_id: string };
     attached_documents?: { filename: string; document_id: string }[];
     signal?: AbortSignal;
@@ -545,14 +549,18 @@ export async function streamProjectChat(payload: {
     const { projectId, signal, ...body } = payload;
     const authHeaders = await getAuthHeaders();
 
-    return fetch(`${API_BASE}/projects/${projectId}/chat`, {
+    return fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             Accept: "text/event-stream",
             ...authHeaders,
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+            ...body,
+            project_id: projectId,
+            startup_id: projectId,
+        }),
         signal,
     });
 }

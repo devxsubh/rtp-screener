@@ -9,6 +9,7 @@ import { logEncryptionSecretWarnings } from "./lib/auth/encryptionSecret";
 import { logEmailStartupWarnings } from "./lib/auth/emailConfig";
 import { logR2StartupWarnings } from "./lib/infra/r2Config";
 import { logRagStartupWarnings } from "./lib/rag/embed";
+import { logWebSearchStartupWarnings } from "./lib/infra/webSearchConfig";
 import {
   projectDocumentsRouter,
   singleDocumentsRouter,
@@ -158,6 +159,7 @@ const server = app.listen(PORT, () => {
   logEmailStartupWarnings();
   logR2StartupWarnings();
   logRagStartupWarnings();
+  logWebSearchStartupWarnings();
   console.log(`Anthropic model: ${getAnthropicModel()}`);
   console.log(`Cache backend: ${isCacheRedis() ? "Upstash Redis" : "in-memory (no UPSTASH_REDIS_REST_URL set)"}`);
   console.log("IC memo: POST /api/startups/:id/ic-memo");

@@ -534,7 +534,7 @@ export function ProjectPage({ projectId, initialTab = "documents" }: Props) {
         title: string,
         _projectId?: string,
         documentIds?: string[],
-        columnsConfig?: ColumnConfig[],
+        columnsConfig?: ColumnConfig[] | null,
     ) {
         setCreatingReview(true);
         try {

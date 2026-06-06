@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Loader2, Play, ChevronDown, MessageSquare, Download, Users, Upload } from "lucide-react";
+import { Plus, Loader2, Play, RefreshCw, ChevronDown, MessageSquare, Download, Users, Upload } from "lucide-react";
 import { HeaderSearchBtn } from "../shared/HeaderSearchBtn";
 
 import {
@@ -27,16 +27,9 @@ import { AddDocumentsModal } from "../shared/AddDocumentsModal";
 import { AddProjectDocsModal } from "../shared/AddProjectDocsModal";
 import { PeopleModal } from "../shared/PeopleModal";
 import { OwnerOnlyModal } from "../shared/OwnerOnlyModal";
-import { ApiKeyMissingModal } from "../shared/ApiKeyMissingModal";
 import { RenameableTitle } from "../shared/RenameableTitle";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserProfile } from "@/contexts/UserProfileContext";
-import { useTabularModelPreference } from "@/lib/tabularModelPreference";
-import {
-    getModelProvider,
-    isModelAvailable,
-    type ModelProvider,
-} from "@/app/lib/modelAvailability";
+import { syncPortfolioGrid } from "@/lib/portfolioApi";
 import { TRSidePanel } from "./TRSidePanel";
 import { TRTable } from "./TRTable";
 import type { TRTableHandle } from "./TRTable";
@@ -83,14 +76,21 @@ export function TRView({ reviewId, projectId }: Props) {
         initialChatParam && initialChatParam !== "new" ? initialChatParam : null,
     );
     const [highlightedCell, setHighlightedCell] = useState<{ colIdx: number; rowIdx: number } | null>(null);
-    const [apiKeyModalProvider, setApiKeyModalProvider] =
-        useState<ModelProvider | null>(null);
     const actionsRef = useRef<HTMLDivElement>(null);
     const tableRef = useRef<TRTableHandle>(null);
     const router = useRouter();
-    const { profile } = useUserProfile();
-    const apiKeys = profile?.apiKeys;
-    const [tabularModel] = useTabularModelPreference();
+
+    const isScreeningBacked =
+        review?.review_kind === "portfolio_monitoring" ||
+        review?.review_kind === "entity_screening";
+
+    async function reloadReview() {
+        const data = await getTabularReview(reviewId);
+        setReview(data.review);
+        setCells(data.cells);
+        setDocuments(data.documents);
+        setColumns(data.review.columns_config || []);
+    }
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -218,11 +218,6 @@ export function TRView({ reviewId, projectId }: Props) {
     }
 
     async function handleRegenerateCell(docId: string, colIndex: number) {
-        if (apiKeys && !isModelAvailable(tabularModel, apiKeys)) {
-            setApiKeyModalProvider(getModelProvider(tabularModel));
-            return;
-        }
-
         setCells((prev) =>
             prev.map((c) =>
                 c.document_id === docId && c.column_index === colIndex
@@ -268,14 +263,27 @@ export function TRView({ reviewId, projectId }: Props) {
         }
     }
 
+    async function handleRefreshData() {
+        if (!review || generating) return;
+        setGenerating(true);
+        try {
+            if (review.review_kind === "portfolio_monitoring") {
+                await syncPortfolioGrid();
+            }
+            await reloadReview();
+        } catch (err) {
+            console.error("Refresh failed", err);
+        } finally {
+            setGenerating(false);
+        }
+    }
+
     async function handleGenerate() {
         if (!review || generating) return;
-
-        // If columns changed since last save, update the review first
         if (columns.length === 0) return;
 
-        if (apiKeys && !isModelAvailable(tabularModel, apiKeys)) {
-            setApiKeyModalProvider(getModelProvider(tabularModel));
+        if (isScreeningBacked) {
+            await handleRefreshData();
             return;
         }
 
@@ -285,16 +293,11 @@ export function TRView({ reviewId, projectId }: Props) {
             const response = await streamTabularGeneration(reviewId);
             if (!response.ok) {
                 const payload = await response.json().catch(() => null);
-                const provider =
-                    payload &&
-                    ["claude", "gemini", "openai"].includes(payload.provider)
-                        ? (payload.provider as ModelProvider)
-                        : getModelProvider(tabularModel);
-                if (payload?.code === "missing_api_key" && provider) {
-                    setApiKeyModalProvider(provider);
-                }
                 throw new Error(
-                    payload?.detail ?? `Generation failed: ${response.status}`,
+                    (payload as { detail?: string; message?: string } | null)
+                        ?.detail ??
+                        (payload as { message?: string } | null)?.message ??
+                        `Generation failed: ${response.status}`,
                 );
             }
             if (!response.body) throw new Error("No body");
@@ -360,6 +363,11 @@ export function TRView({ reviewId, projectId }: Props) {
                                         : c,
                                 ),
                             );
+                        } else if (
+                            data.type === "error" ||
+                            data.type === "info"
+                        ) {
+                            await reloadReview();
                         }
                     } catch {}
                 }
@@ -669,27 +677,54 @@ export function TRView({ reviewId, projectId }: Props) {
                                     generating ||
                                     columns.length === 0 ||
                                     documents.length === 0 ||
-                                    savingColumnsConfig
+                                    savingColumnsConfig ||
+                                    (!isScreeningBacked &&
+                                        review?.review_kind === "standard")
+                                }
+                                title={
+                                    isScreeningBacked
+                                        ? "Reload grid from latest startup screening data"
+                                        : review?.review_kind === "standard"
+                                          ? "AI column extraction for document reviews is coming soon — use the Assistant panel"
+                                          : undefined
                                 }
                                 className={`flex h-8 items-center justify-center gap-1.5 px-3 text-sm transition-colors ${
                                     generating ||
                                     columns.length === 0 ||
                                     documents.length === 0 ||
-                                    savingColumnsConfig
+                                    savingColumnsConfig ||
+                                    (!isScreeningBacked &&
+                                        review?.review_kind === "standard")
                                         ? "text-gray-300 cursor-default"
                                         : "text-gray-700 hover:text-gray-900 cursor-pointer"
                                 }`}
                             >
                                 {generating ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : isScreeningBacked ? (
+                                    <RefreshCw className="h-4 w-4" />
                                 ) : (
                                     <Play className="h-4 w-4" />
                                 )}
-                                {generating ? "Running…" : "Run"}
+                                {generating
+                                    ? "Running…"
+                                    : isScreeningBacked
+                                      ? "Refresh"
+                                      : "Run"}
                             </button>
                         </div>
                     )}
                 </div>
+
+                {!loading && review?.review_kind === "portfolio_monitoring" && (
+                    <div className="px-4 md:px-10 py-2 text-xs text-gray-600 bg-amber-50 border-b border-amber-100">
+                        Rows sync from your Startups list. Click{" "}
+                        <strong>Refresh</strong> after screening a startup.
+                        &quot;Co-investor risk: Not screened&quot; means no
+                        co-investor roster screen has been run on that startup
+                        yet.
+                    </div>
+                )}
 
                 {/* Toolbar */}
                 <div className="flex items-center h-10 px-4 md:px-10 border-b border-gray-200 gap-4">
@@ -980,12 +1015,6 @@ export function TRView({ reviewId, projectId }: Props) {
                 open={!!ownerOnlyAction}
                 action={ownerOnlyAction ?? undefined}
                 onClose={() => setOwnerOnlyAction(null)}
-            />
-
-            <ApiKeyMissingModal
-                open={apiKeyModalProvider !== null}
-                provider={apiKeyModalProvider}
-                onClose={() => setApiKeyModalProvider(null)}
             />
         </div>
     );

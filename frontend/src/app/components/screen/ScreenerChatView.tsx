@@ -8,6 +8,7 @@ import { ScreenerChatInput } from "./ScreenerChatInput";
 import { ScreeningResultsPanel } from "./ScreeningResultsPanel";
 import type { ScreenerMessage } from "./chatTypes";
 import type { ScreeningResult } from "@/lib/screenerTypes";
+import { shouldShowMessageOptions } from "@/lib/parseMessageOptions";
 
 interface Props {
   messages: ScreenerMessage[];
@@ -151,6 +152,14 @@ export function ScreenerChatView({
                       minHeight={
                         i === lastAssistantIndex ? minHeight : "0px"
                       }
+                      showOptionChips={shouldShowMessageOptions(
+                        i,
+                        messages,
+                        isResponseLoading,
+                      )}
+                      onOptionSelect={(value) => {
+                        handleChat({ role: "user", content: value });
+                      }}
                     />
                   )}
                 </div>

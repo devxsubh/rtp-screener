@@ -28,17 +28,9 @@ import type {
     ColumnConfig,
     RtpDocument,
 } from "../shared/types";
-import { ModelToggle } from "../assistant/ModelToggle";
-import { ApiKeyMissingModal } from "../shared/ApiKeyMissingModal";
 import { PreResponseWrapper } from "../shared/PreResponseWrapper";
-import { useUserProfile } from "@/contexts/UserProfileContext";
-import { useTabularModelPreference } from "@/lib/tabularModelPreference";
-import {
-    getModelProvider,
-    isModelAvailable,
-    type ModelProvider,
-} from "@/app/lib/modelAvailability";
-import type { ApiKeyState } from "@/app/lib/rtpGlobalApi";
+
+const USE_SERVER_CLAUDE = true;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -446,17 +438,11 @@ function TRChatInput({
     isLoading,
     onSubmit,
     onCancel,
-    model,
-    onModelChange,
-    apiKeys,
     onHeightChange,
 }: {
     isLoading: boolean;
     onSubmit: (value: string) => void;
     onCancel: () => void;
-    model: string;
-    onModelChange: (id: string) => void;
-    apiKeys?: ApiKeyState;
     onHeightChange: (height: number) => void;
 }) {
     const [value, setValue] = useState("");
@@ -529,11 +515,11 @@ function TRChatInput({
                     className="w-full resize-none text-sm bg-transparent outline-none placeholder:text-gray-400 leading-6 max-h-48 overflow-hidden border-0 p-0 pl-3 pr-2 pt-0.5"
                 />
                 <div className="flex items-center justify-between pl-1 pr-2">
-                    <ModelToggle
-                        value={model}
-                        onChange={onModelChange}
-                        apiKeys={apiKeys}
-                    />
+                    {USE_SERVER_CLAUDE ? (
+                        <span className="text-[11px] text-gray-400 px-2">
+                            Claude Haiku
+                        </span>
+                    ) : null}
                     <button
                         type="button"
                         onClick={handleAction}
@@ -643,11 +629,6 @@ export function TRChatPanel({
     initialChatId,
     onChatIdChange,
 }: Props) {
-    const { profile } = useUserProfile();
-    const apiKeys = profile?.apiKeys;
-    const [currentModel, setCurrentModel] = useTabularModelPreference();
-    const [apiKeyModalProvider, setApiKeyModalProvider] =
-        useState<ModelProvider | null>(null);
     const [chats, setChats] = useState<TRChat[]>([]);
     const [currentChatId, setCurrentChatId] = useState<string | null>(
         initialChatId ?? null,
@@ -992,10 +973,6 @@ export function TRChatPanel({
 
     async function handleSubmit(trimmed: string) {
         if (!trimmed || isLoading) return;
-        if (apiKeys && !isModelAvailable(currentModel, apiKeys)) {
-            setApiKeyModalProvider(getModelProvider(currentModel));
-            return;
-        }
 
         // Build messages array for backend (plain text history)
         const history: { role: string; content: string }[] = messages.map(
@@ -1044,6 +1021,13 @@ export function TRChatPanel({
                 controller.signal,
                 { reviewTitle, projectName },
             );
+            if (!response.ok) {
+                const payload = await response.json().catch(() => null);
+                throw new Error(
+                    (payload as { detail?: string } | null)?.detail ??
+                        `Chat failed (${response.status})`,
+                );
+            }
             if (!response.body) throw new Error("No response body");
 
             const reader = response.body.getReader();
@@ -1489,16 +1473,7 @@ export function TRChatPanel({
                 isLoading={isLoading}
                 onSubmit={handleSubmit}
                 onCancel={handleCancel}
-                model={currentModel}
-                onModelChange={setCurrentModel}
-                apiKeys={apiKeys}
                 onHeightChange={setInputHeight}
-            />
-
-            <ApiKeyMissingModal
-                open={apiKeyModalProvider !== null}
-                provider={apiKeyModalProvider}
-                onClose={() => setApiKeyModalProvider(null)}
             />
         </div>
     );

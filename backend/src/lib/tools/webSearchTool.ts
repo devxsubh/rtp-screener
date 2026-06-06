@@ -29,9 +29,12 @@ export const webSearchTool: ToolDefinition = {
     const q = args.query?.trim();
     if (!q) return { content: "Error: query is required." };
 
-    const apiKey = process.env.TAVILY_API_KEY;
-    if (!apiKey) {
-      return { content: "Web search unavailable — TAVILY_API_KEY not set." };
+    const apiKey = process.env.TAVILY_API_KEY?.trim();
+    if (!apiKey || apiKey.includes("NEXT_PUBLIC_")) {
+      return {
+        content:
+          "Web search unavailable — TAVILY_API_KEY is not set or is malformed in the server environment. Add a valid key to the root `.env` on its own line and restart the backend.",
+      };
     }
 
     const maxResults = Math.min(Math.max(1, args.max_results ?? 5), 10);
@@ -80,11 +83,11 @@ export const webSearchTool: ToolDefinition = {
     return { content: lines.join("\n") };
   },
   routingHint: `### web_search
-Call for current public information not in the screening data:
-- "any news about [flagged entity]?" → web_search
-- "search for [company] background" → web_search
-- "who owns [company]?" (ownership not in cap table) → web_search
-- "recent OFAC/EU sanctions news" → web_search
-Do NOT call if query_screening_data can answer from loaded screening results.
+Call for current public information — available in every chat, with or without a cap table attached:
+- news, adverse media, or background on an entity → web_search
+- "who owns [company]?" when not in screening data → web_search
+- recent OFAC/EU sanctions announcements → web_search
+- any question requiring live web sources when query_screening_data cannot answer
+Do NOT call if query_screening_data already has the answer from loaded screening results.
 After calling web_search, ALWAYS include each source URL as a markdown link in your response — never drop citations.`,
 };

@@ -2,6 +2,7 @@ import express from "express";
 import { getAnthropicModel } from "../lib/llm/models";
 import { getScreeningThresholds } from "../lib/screening/screeningConfig";
 import { isEmbeddingEnabled } from "../lib/rag/embed";
+import { isWebSearchEnabled } from "../lib/infra/webSearchConfig";
 
 export const configRouter = express.Router();
 
@@ -14,5 +15,6 @@ configRouter.get("/", (_req, res) => {
     },
     screening: getScreeningThresholds(),
     ragEnabled: isEmbeddingEnabled(),
+    webSearchEnabled: isWebSearchEnabled(),
   });
 });

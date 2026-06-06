@@ -22,11 +22,31 @@ import { listProjects } from "@/app/lib/rtpGlobalApi";
 import type { RtpProject } from "@/app/components/shared/types";
 
 const NAV_ITEMS = [
-    { href: "/assistant", label: "Assistant", icon: MessageSquare },
-    { href: "/startups", label: "Startups", icon: FolderOpen },
-    { href: "/tabular-reviews", label: "Tabular Review", icon: Table2 },
-    { href: "/workflows", label: "Workflows", icon: Library },
-];
+    {
+        href: "/assistant",
+        label: "Assistant",
+        icon: MessageSquare,
+        tourId: "nav-assistant",
+    },
+    {
+        href: "/startups",
+        label: "Startups",
+        icon: FolderOpen,
+        tourId: "nav-startups",
+    },
+    {
+        href: "/tabular-reviews",
+        label: "Tabular Review",
+        icon: Table2,
+        tourId: "nav-tabular",
+    },
+    {
+        href: "/workflows",
+        label: "Workflows",
+        icon: Library,
+        tourId: "nav-workflows",
+    },
+] as const;
 
 interface AppSidebarProps {
     isOpen: boolean;
@@ -167,11 +187,15 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
             </div>
 
             {/* Nav items */}
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            {NAV_ITEMS.map(({ href, label, icon: Icon, tourId }) => {
                 const isActive =
                     pathname === href || pathname.startsWith(href + "/");
                 return (
-                    <div key={href} className="py-0.5 px-2.5">
+                    <div
+                        key={href}
+                        data-tour={tourId}
+                        className="py-0.5 px-2.5"
+                    >
                         <button
                             onClick={() => router.push(href)}
                             title={!isOpen ? label : ""}
@@ -203,7 +227,7 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
             {isOpen && (
                 <div className="mt-4 flex-1 min-h-0 flex flex-col gap-4">
                     {/* Recent Projects */}
-                    <div>
+                    <div data-tour="recent-projects">
                         <button
                             onClick={() => setProjectsCollapsed((v) => !v)}
                             className={`mb-2 flex w-full items-center justify-between px-5 text-xs font-semibold text-gray-500 transition-colors hover:text-gray-700 ${

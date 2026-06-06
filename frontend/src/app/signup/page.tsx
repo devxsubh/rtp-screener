@@ -105,42 +105,66 @@ export default function SignupPage() {
     // Success View
     if (success) {
         return (
-            <div className="min-h-dvh bg-white flex items-start justify-center px-6 pt-32 md:pt-40 pb-10 relative">
-                <div className="absolute top-4 md:top-8 left-1/2 -translate-x-1/2">
-                    <SiteLogo size="md" className="md:text-4xl" asLink />
-                </div>
-                <div className="w-full max-w-md">
-                    <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
-                        <div className="mx-auto w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mb-6">
-                            {verificationRequired ? (
-                                <Mail className="h-6 w-6 text-blue-600" />
-                            ) : (
-                                <CheckCircle2 className="h-6 w-6 text-green-600" />
-                            )}
-                        </div>
-                        <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-                            {verificationRequired
-                                ? "Check your email"
-                                : "Account created!"}
-                        </h2>
-                        <p className="text-gray-600 leading-relaxed">
-                            {verificationRequired ? (
-                                <>
-                                    We sent a verification link to{" "}
-                                    <strong>{signupEmail}</strong>. Verify your
-                                    email before signing in.
-                                </>
-                            ) : (
-                                "Redirecting you to the home page..."
-                            )}
-                        </p>
-                        {verificationRequired && (
-                            <Link
-                                href="/login"
-                                className="inline-block mt-6 text-sm text-blue-600 hover:underline"
-                            >
-                                Go to sign in
-                            </Link>
+            <div className="min-h-dvh bg-neutral-50 flex flex-col items-center px-6 pt-24 md:pt-28 pb-10">
+                <SiteLogo size="md" className="md:text-4xl" asLink />
+                <div className="w-full max-w-md mt-10 md:mt-12">
+                    <div className="bg-white border border-neutral-200 rounded-2xl p-8 md:p-10 shadow-sm">
+                        {verificationRequired ? (
+                            <>
+                                <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50">
+                                    <Mail
+                                        className="h-6 w-6 text-neutral-700"
+                                        strokeWidth={1.5}
+                                    />
+                                </div>
+                                <h1 className="font-serif text-3xl text-neutral-900 tracking-tight">
+                                    Check your email
+                                </h1>
+                                <p className="mt-3 text-sm text-neutral-600 leading-relaxed">
+                                    We sent a verification link to finish setting
+                                    up your account. Open it from your inbox, then
+                                    sign in here.
+                                </p>
+                                <div className="mt-6 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3.5">
+                                    <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+                                        Sent to
+                                    </p>
+                                    <p className="mt-1 text-sm font-medium text-neutral-900 break-all">
+                                        {signupEmail}
+                                    </p>
+                                </div>
+                                <ul className="mt-6 space-y-2 border-t border-neutral-100 pt-6 text-sm text-neutral-600">
+                                    <li>
+                                        Didn&apos;t get it? Check spam or
+                                        promotions — delivery can take a minute.
+                                    </li>
+                                    <li>
+                                        After verifying, use the same email and
+                                        password on the sign-in page.
+                                    </li>
+                                </ul>
+                                <Button
+                                    asChild
+                                    className="mt-8 w-full bg-black hover:bg-neutral-800 text-white"
+                                >
+                                    <Link href="/login">Go to sign in</Link>
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50">
+                                    <CheckCircle2
+                                        className="h-6 w-6 text-neutral-700"
+                                        strokeWidth={1.5}
+                                    />
+                                </div>
+                                <h1 className="font-serif text-3xl text-neutral-900 tracking-tight">
+                                    Account created
+                                </h1>
+                                <p className="mt-3 text-sm text-neutral-600 leading-relaxed">
+                                    Redirecting you to the assistant…
+                                </p>
+                            </>
                         )}
                     </div>
                 </div>
@@ -294,7 +318,7 @@ export default function SignupPage() {
                             href="https://rtpglobal.com/terms"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
+                            className="text-neutral-900 underline underline-offset-2 hover:text-neutral-600"
                         >
                             Terms of Use
                         </Link>{" "}
@@ -303,7 +327,7 @@ export default function SignupPage() {
                             href="https://rtpglobal.com/privacy"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
+                            className="text-neutral-900 underline underline-offset-2 hover:text-neutral-600"
                         >
                             Privacy Policy
                         </Link>

@@ -33,4 +33,6 @@ export type ToolContext = {
   workflowStore?: Map<string, WorkflowPrompt>;
   onWorkflowApplied?: (workflowId: string, title: string) => void;
   onScreeningProgress?: ScreeningProgressFn;
+  attachedDocuments?: Array<{ filename: string; document_id: string }>;
+  displayedDocument?: { filename: string; document_id: string };
 };

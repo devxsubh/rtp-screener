@@ -212,7 +212,7 @@ export async function syncPortfolioMonitoringReview(params: {
         userEmail: params.userEmail,
         title: "Portfolio Sanctions Monitoring",
         projectId: null,
-        workflowId: null,
+        workflowId: "builtin-portfolio-monitoring",
         reviewKind: "portfolio_monitoring",
         columnsConfig: PORTFOLIO_COLUMNS,
         rowIds,

@@ -35,6 +35,7 @@ import { useAssistantChat } from "@/app/hooks/useAssistantChat";
 import { useChatHistoryContext } from "@/app/contexts/ChatHistoryContext";
 import { UserMessage } from "@/app/components/assistant/UserMessage";
 import { AssistantMessage } from "@/app/components/assistant/AssistantMessage";
+import { shouldShowMessageOptions } from "@/lib/parseMessageOptions";
 import { ChatInput } from "@/app/components/assistant/ChatInput";
 import type { ChatInputHandle } from "@/app/components/assistant/ChatInput";
 import { ProjectExplorer } from "@/app/components/projects/ProjectExplorer";
@@ -1102,6 +1103,17 @@ export default function ProjectAssistantChatPage({ params }: Props) {
                                             isDocReloading={(docId) =>
                                                 reloadingDocIds.has(docId)
                                             }
+                                            showOptionChips={shouldShowMessageOptions(
+                                                i,
+                                                messages,
+                                                isResponseLoading,
+                                            )}
+                                            onOptionSelect={(value) => {
+                                                void handleSubmit({
+                                                    role: "user",
+                                                    content: value,
+                                                });
+                                            }}
                                         />
                                     ),
                                 );

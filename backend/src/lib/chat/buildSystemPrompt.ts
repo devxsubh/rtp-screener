@@ -57,6 +57,28 @@ export function buildSystemPrompt(
         clearCount: ctx.screeningResult.clearCount,
       })}`,
     );
+  } else if (!ctx.csvContent) {
+    parts.push(
+      "No cap-table CSV or screening result is loaded in this session. " +
+        "For questions about current news, public company background, adverse media, or live sanctions announcements, call web_search. " +
+        "For firm policy questions, call search_compliance_playbook.",
+    );
+  }
+
+  if (ctx.attachedDocuments && ctx.attachedDocuments.length > 0) {
+    const list = ctx.attachedDocuments
+      .map((d) => `- ${d.filename} (document_id: ${d.document_id})`)
+      .join("\n");
+    parts.push(
+      `Documents attached to the user's latest message:\n${list}\n` +
+        "Use list_startup_documents / search_startup_documents or screen_document_entities when relevant.",
+    );
+  }
+
+  if (ctx.displayedDocument) {
+    parts.push(
+      `The user currently has this document open in the workspace panel: ${ctx.displayedDocument.filename} (document_id: ${ctx.displayedDocument.document_id}).`,
+    );
   }
 
   return parts.join("\n\n");

@@ -25,6 +25,8 @@ const BASE_SYSTEM =
   `Do NOT list individual entities, match scores, or ownership chains in chat — the UI opens an interactive side panel with the ownership graph and entity risk table. ` +
   `Use query_screening_data only when the user asks about a specific entity.\n\n` +
   `Be concise and professional. Never conclude guilt or confirm sanctions violations.\n` +
+  `For questions about current news, company background, or public sanctions activity that are NOT in screening data, call web_search — it works in any conversation, not only after a cap-table screen.\n` +
+  `Use numbered markdown lists (1. … 2. …) ONLY when the user must pick between 2–5 mutually exclusive paths (e.g. screen now vs. ask a question). The UI renders these as clickable chips. Do NOT add numbered option lists on greetings, acknowledgments, simple factual answers, or when the user already stated what they want. Prefer a short direct reply; if you need clarification, ask one follow-up question in plain prose.\n` +
   `When you call web_search, you MUST include every source URL from the results as a markdown hyperlink [title](url) in your response. Never summarise web results without citing links.\n\n` +
   `CSV ingest: any CSV format is accepted — the system auto-detects cap tables or flat entity lists. Missing required fields block screening.`;
 
@@ -89,6 +91,30 @@ function parseScreeningResult(value: unknown): ScreeningResult | null {
   return r;
 }
 
+function parseDocumentRef(
+  value: unknown,
+): { filename: string; document_id: string } | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.filename !== "string" || typeof row.document_id !== "string") {
+    return null;
+  }
+  const filename = row.filename.trim();
+  const document_id = row.document_id.trim();
+  if (!filename || !document_id) return null;
+  return { filename, document_id };
+}
+
+function parseDocumentRefs(
+  value: unknown,
+): Array<{ filename: string; document_id: string }> | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const out = value
+    .map(parseDocumentRef)
+    .filter((d): d is { filename: string; document_id: string } => d !== null);
+  return out.length > 0 ? out : undefined;
+}
+
 assistantChatRouter.post("/", async (req, res) => {
   const userId = res.locals.userId as string;
   const userEmail = res.locals.userEmail as string;
@@ -98,11 +124,19 @@ assistantChatRouter.post("/", async (req, res) => {
     chat_id,
     csvContent,
     screeningResult: screeningBody,
+    project_id,
+    startup_id,
+    displayed_doc,
+    attached_documents,
   } = req.body as {
     messages?: unknown;
     chat_id?: string;
     csvContent?: unknown;
     screeningResult?: unknown;
+    project_id?: unknown;
+    startup_id?: unknown;
+    displayed_doc?: unknown;
+    attached_documents?: unknown;
   };
 
   const parsedMessages = parseAssistantMessages(messages);
@@ -147,8 +181,12 @@ assistantChatRouter.post("/", async (req, res) => {
     userId,
     userEmail,
     startupId:
-      mentionedStartups.length === 1 ? mentionedStartups[0].id : undefined,
+      (typeof startup_id === "string" && startup_id.trim()) ||
+      (typeof project_id === "string" && project_id.trim()) ||
+      (mentionedStartups.length === 1 ? mentionedStartups[0].id : undefined),
     onScreeningProgress: writeProgress,
+    attachedDocuments: parseDocumentRefs(attached_documents),
+    displayedDocument: parseDocumentRef(displayed_doc) ?? undefined,
   };
 
   let system = buildSystemPrompt(BASE_SYSTEM, ctx, assistantRegistry);

@@ -11,6 +11,7 @@ import { ScreenerAssistantMessage } from "@/app/components/screen/ScreenerAssist
 import { RtpGlobalIcon } from "@/components/chat/rtp-global-icon";
 import type { ScreenerMessage } from "@/app/components/screen/chatTypes";
 import type { RtpMessage } from "@/app/components/shared/types";
+import { shouldShowMessageOptions } from "@/lib/parseMessageOptions";
 
 interface Props {
     messages: ScreenerMessage[];
@@ -107,6 +108,17 @@ export function StartupChatPanel({
                                         isError={!!msg.error}
                                         minHeight="0px"
                                         startupId={startupId}
+                                        showOptionChips={shouldShowMessageOptions(
+                                            i,
+                                            messages,
+                                            isResponseLoading,
+                                        )}
+                                        onOptionSelect={(value) => {
+                                            handleChat({
+                                                role: "user",
+                                                content: value,
+                                            });
+                                        }}
                                     />
                                 )}
                             </div>

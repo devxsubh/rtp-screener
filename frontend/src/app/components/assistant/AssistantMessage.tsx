@@ -18,6 +18,8 @@ import { EditCard, applyOptimisticResolution } from "./EditCard";
 import { PreResponseWrapper } from "../shared/PreResponseWrapper";
 import { getAuthHeaders } from "@/lib/apiAuth";
 import type { ScreeningResult } from "@/lib/screenerTypes";
+import { parseMessageOptions } from "@/lib/parseMessageOptions";
+import { MessageOptionChips } from "@/app/components/shared/MessageOptionChips";
 
 function toolCallLabel(name: string): string {
     if (name === "generate_docx") return "Creating document...";
@@ -28,6 +30,7 @@ function toolCallLabel(name: string): string {
     if (name === "replicate_document") return "Copying document...";
     if (name === "read_workflow") return "Loading workflow...";
     if (name === "list_workflows") return "Loading workflows...";
+    if (name === "web_search") return "Searching the web…";
     if (name === "list_documents") return "Loading documents...";
     return name ? `Running ${name}...` : "Working...";
 }
@@ -1163,6 +1166,9 @@ interface Props {
      * edits flip their per-card UI without per-card clicks.
      */
     resolvedEditStatuses?: Record<string, "accepted" | "rejected">;
+    /** When true, numbered lists in the last content block render as clickable MCQ options. */
+    showOptionChips?: boolean;
+    onOptionSelect?: (value: string) => void;
 }
 
 export function AssistantMessage({
@@ -1184,6 +1190,8 @@ export function AssistantMessage({
     isDocReloading,
     isEditReloading,
     resolvedEditStatuses,
+    showOptionChips = false,
+    onOptionSelect,
 }: Props) {
     const messageKey = useId();
     const contentDivRef = useRef<HTMLDivElement | null>(null);
@@ -1222,16 +1230,36 @@ export function AssistantMessage({
     // only for cross-page continuations via the [[PAGE_BREAK]] sentinel).
     const citationsList: RtpCitationAnnotation[] = [];
     const processedTexts: string[] = [];
+    let messageOptions = null as ReturnType<typeof parseMessageOptions> | null;
+
+    const lastContentIdxForOptions = events
+        ? events.reduce(
+              (last, e, idx) => (e.type === "content" ? idx : last),
+              -1,
+          )
+        : -1;
+
     if (events) {
-        for (const event of events) {
+        for (let idx = 0; idx < events.length; idx++) {
+            const event = events[idx];
+            if (event.type !== "content") {
+                processedTexts.push("");
+                continue;
+            }
+
+            let text = event.text;
+            if (
+                idx === lastContentIdxForOptions &&
+                showOptionChips &&
+                !isStreaming &&
+                !isError
+            ) {
+                messageOptions = parseMessageOptions(text);
+                if (messageOptions) text = messageOptions.displayText;
+            }
+
             processedTexts.push(
-                event.type === "content"
-                    ? preprocessCitations(
-                          event.text,
-                          annotations,
-                          citationsList,
-                      )
-                    : "",
+                preprocessCitations(text, annotations, citationsList),
             );
         }
     }
@@ -1489,6 +1517,17 @@ export function AssistantMessage({
                                                     : undefined
                                             }
                                         />
+                                        {isLastContent &&
+                                            messageOptions &&
+                                            onOptionSelect && (
+                                                <MessageOptionChips
+                                                    options={
+                                                        messageOptions.options
+                                                    }
+                                                    onSelect={onOptionSelect}
+                                                    disabled={isStreaming}
+                                                />
+                                            )}
                                     </div>
                                 );
                             }
