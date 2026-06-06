@@ -7,7 +7,9 @@
     "build": "tsc && cp -r src/assets dist/assets",
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js",
-    "generate:jwt-keys": "bash scripts/generate-jwt-keys.sh"
+    "generate:jwt-keys": "bash scripts/generate-jwt-keys.sh",
+    "seed:demo": "tsx scripts/seed-demo-startup.ts",
+    "db:reset": "tsx scripts/reset-database.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

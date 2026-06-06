@@ -14,7 +14,7 @@ export function friendlyLlmError(err: unknown): string {
     msg.includes("invalid x-api-key") ||
     msg.includes("401")
   ) {
-    return "Anthropic API key is invalid. Set ANTHROPIC_API_KEY in backend/.env and restart the backend.";
+    return "Anthropic API key is invalid. Set ANTHROPIC_API_KEY in root `.env` (or `.env.production` on EC2) and restart the backend.";
   }
 
   if (msg.includes("rate_limit") || msg.includes("429")) {
@@ -30,7 +30,7 @@ export function friendlyLlmError(err: unknown): string {
   }
 
   if (msg.includes("ECONNREFUSED") && msg.includes("8084")) {
-    return "Watchman sanctions service is not running. Start it with: docker run --rm -p 8084:8084 moov/watchman:static";
+    return "Watchman sanctions service is not running. Local dev: docker compose -f docker-compose.dev.yml up";
   }
 
   return msg;

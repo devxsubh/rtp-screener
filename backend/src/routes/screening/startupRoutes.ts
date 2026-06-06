@@ -9,6 +9,7 @@ import {
 } from "../../lib/screening/screeningDelta";
 import { CapTableCsv, Startup } from "../../models";
 import type { RosterPurpose, ScreeningResult } from "../../types/screening";
+import { rejectSampleWrite } from "../startups/middleware";
 import { toStartup } from "../startups/serializers";
 import { authIdentityOr500 } from "../../middleware/userIdentity";
 import { WatchmanUnavailableError } from "../../lib/screening/watchman";
@@ -40,6 +41,14 @@ function screeningUpdateForPurpose(
 }
 
 startupScreeningRouter.post("/:id/screen", async (req, res) => {
+  if (
+    rejectSampleWrite(
+      res,
+      res.locals.accessibleStartup as Record<string, unknown> | undefined,
+    )
+  ) {
+    return;
+  }
   const { csvId, purpose: purposeBody } = (req.body ?? {}) as {
     csvId?: string;
     purpose?: string;

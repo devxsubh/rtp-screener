@@ -35,6 +35,7 @@ const schema = new mongoose.Schema({
   rowIds: { type: [String], default: [] },
   rows: { type: [rowSchema], default: [] },
   sharedWith: { type: [String], default: [] },
+  isSample: { type: Boolean, default: false, index: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

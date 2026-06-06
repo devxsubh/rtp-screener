@@ -13,6 +13,11 @@ import {
 } from "../lib/chat/startupMentions";
 import type { ScreeningResult } from "../lib/screening/runScreening";
 import { validateCsvContent } from "../lib/chat/validateChatPayload";
+import {
+  formatProjectAssetsForPrompt,
+  loadProjectAssets,
+} from "../lib/chat/projectAssets";
+import { Startup } from "../models";
 
 export const assistantChatRouter = express.Router();
 
@@ -193,7 +198,23 @@ assistantChatRouter.post("/", async (req, res) => {
 
   const lastUser = [...validMessages].reverse().find((m) => m.role === "user");
   if (lastUser?.workflow?.id) {
-    system += `\n\nThe user's latest message selected workflow "${lastUser.workflow.title}" (id: ${lastUser.workflow.id}). Call read_workflow with that id immediately.`;
+    system += `\n\nThe user's latest message selected workflow "${lastUser.workflow.title}" (id: ${lastUser.workflow.id}). Call read_workflow with that id immediately — do not ask which workflow to run.`;
+
+    if (ctx.startupId) {
+      const assets = await loadProjectAssets(ctx.startupId, userId);
+      const startup = (await Startup.findOne({
+        _id: ctx.startupId,
+        ownerId: userId,
+      })
+        .select("name")
+        .lean()) as { name?: string } | null;
+      if (assets && startup?.name) {
+        system += `\n\n${formatProjectAssetsForPrompt(startup.name, assets)}`;
+      }
+    } else if (!ctx.csvContent && !ctx.screeningResult) {
+      system +=
+        `\n\nNo project workspace is active. If the workflow needs data, call list_mentioned_startups or ask the user to @-mention a project with existing CSVs/screening — do not immediately demand a new upload if they may already have data in the platform.`;
+    }
   }
 
   res.setHeader("Content-Type", "text/event-stream");

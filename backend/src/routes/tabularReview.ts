@@ -6,6 +6,13 @@ import { requireAuth } from "../middleware/requireAuth";
 import { connectDb } from "../lib/infra/db";
 import { TabularReview } from "../models";
 import { TabularCell } from "../models";
+import {
+  findAccessibleTabularReview,
+  hideSampleAsset,
+  isSampleRecord,
+  isWritableTabularReview,
+  visibleTabularReviewFilter,
+} from "../lib/sample/sampleAssets";
 import { applyTabularStatusCell } from "../lib/tabular/reviewStatusSync";
 import { buildTabularContextPrompt } from "../lib/tabular/buildTabularChatPrompt";
 import { syncPortfolioMonitoringReview } from "../lib/portfolio/portfolioGrid";
@@ -50,6 +57,7 @@ function toReviewApi(raw: Record<string, unknown>, userId: string) {
     updated_at: new Date(raw.updatedAt as string).toISOString(),
     document_count: Array.isArray(raw.rowIds) ? raw.rowIds.length : 0,
     review_kind: raw.reviewKind ?? "standard",
+    is_sample: raw.isSample === true,
   };
 }
 
@@ -66,7 +74,13 @@ function toCellApi(raw: Record<string, unknown>) {
 }
 
 async function findOwnedReview(id: string, userId: string) {
-  return TabularReview.findOne({ _id: id, userId }).lean();
+  const review = await findAccessibleTabularReview(id, userId);
+  if (!review || !isWritableTabularReview(review, userId)) return null;
+  return review;
+}
+
+async function findAccessibleReview(id: string, userId: string) {
+  return findAccessibleTabularReview(id, userId);
 }
 
 function rowsToDocuments(
@@ -93,12 +107,16 @@ tabularReviewRouter.get("/", async (req, res) => {
   const userId = res.locals.userId as string;
   const { project_id } = req.query as { project_id?: string };
 
-  const query: Record<string, unknown> = { userId };
+  const extra: Record<string, unknown> = {};
   if (project_id) {
-    query.projectId = new mongoose.Types.ObjectId(project_id);
+    extra.projectId = new mongoose.Types.ObjectId(project_id);
   }
 
-  const list = await TabularReview.find(query).sort({ updatedAt: -1 }).lean();
+  const list = await TabularReview.find(
+    await visibleTabularReviewFilter(userId, extra),
+  )
+    .sort({ updatedAt: -1 })
+    .lean();
   res.json(list.map((r) => toReviewApi(r as Record<string, unknown>, userId)));
 });
 
@@ -145,7 +163,7 @@ tabularReviewRouter.post("/prompt", async (req, res) => {
 
 tabularReviewRouter.get("/:id", async (req, res) => {
   const userId = res.locals.userId as string;
-  const review = (await findOwnedReview(req.params.id, userId)) as
+  const review = (await findAccessibleReview(req.params.id, userId)) as
     | Record<string, unknown>
     | null;
 
@@ -250,6 +268,18 @@ tabularReviewRouter.patch("/:id", async (req, res) => {
 
 tabularReviewRouter.delete("/:id", async (req, res) => {
   const userId = res.locals.userId as string;
+  const existing = await findAccessibleReview(req.params.id, userId);
+  if (!existing) {
+    res.status(404).json({ detail: "Review not found" });
+    return;
+  }
+
+  if (isSampleRecord(existing)) {
+    await hideSampleAsset(userId, "tabular_review", req.params.id);
+    res.status(204).send();
+    return;
+  }
+
   const review = await TabularReview.findOneAndDelete({
     _id: req.params.id,
     userId,

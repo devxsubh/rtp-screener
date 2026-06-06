@@ -40,5 +40,9 @@ export { AuditLog, type AuditEventType } from "./audit/auditLog";
 export { WorkflowModel } from "./workflows/workflow";
 export { WorkflowShareModel } from "./workflows/workflowShare";
 export { HiddenWorkflowModel } from "./workflows/hiddenWorkflow";
+export {
+  HiddenSampleAsset,
+  type SampleAssetType,
+} from "./sample/hiddenSampleAsset";
 export { RagDocument, type IRagDocument, type RagDocumentStatus } from "./rag/ragDocument";
 export { DocChunk, type IDocChunk } from "./rag/docChunk";

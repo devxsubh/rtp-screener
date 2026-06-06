@@ -12,6 +12,7 @@ export function isEntityBlockedBy50Rule(
   entity: string,
   sanctionedNames: Set<string>,
   cache: Map<string, boolean> = new Map(),
+  visiting: Set<string> = new Set(),
 ): boolean {
   if (cache.has(entity)) return cache.get(entity)!;
 
@@ -19,6 +20,12 @@ export function isEntityBlockedBy50Rule(
     cache.set(entity, true);
     return true;
   }
+
+  // Circular ownership (e.g. Apex ↔ Loopback) — stop recursion on revisits.
+  if (visiting.has(entity)) {
+    return false;
+  }
+  visiting.add(entity);
 
   const threshold = getScreeningThresholds().ofacOwnershipRulePct;
   let aggregate = 0;
@@ -29,12 +36,13 @@ export function isEntityBlockedBy50Rule(
     const pct = graph.getEdgeAttribute(edgeKey, "pct") as number;
     if (
       sanctionedNames.has(owner) ||
-      isEntityBlockedBy50Rule(graph, owner, sanctionedNames, cache)
+      isEntityBlockedBy50Rule(graph, owner, sanctionedNames, cache, visiting)
     ) {
       aggregate += pct;
     }
   }
 
+  visiting.delete(entity);
   const blocked = aggregate >= threshold;
   cache.set(entity, blocked);
   return blocked;

@@ -18,6 +18,7 @@ export function toStartup(raw: unknown) {
     lastVendorScreenedAt: s.lastVendorScreenedAt ?? null,
     portfolioReviewStatus: s.portfolioReviewStatus ?? "pending",
     portfolioReviewNotes: s.portfolioReviewNotes ?? null,
+    isSample: s.isSample === true,
   };
 }
 

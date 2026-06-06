@@ -1,6 +1,15 @@
 import { Router } from "express";
 import { CapTableCsv, Startup, StartupChat, StartupDocument } from "../../models";
-import { findOwnedStartup, ownerFilter } from "./middleware";
+import {
+  findAccessibleStartup,
+  hideSampleAsset,
+  isSampleRecord,
+} from "../../lib/sample/sampleAssets";
+import {
+  findOwnedStartup,
+  ownerFilter,
+  visibleStartupFilter,
+} from "./middleware";
 import { toStartup } from "./serializers";
 import {
   startupListCache,
@@ -20,7 +29,7 @@ startupsCrudListRouter.get("/", async (req, res) => {
     res.json(cached);
     return;
   }
-  const list = await Startup.find(ownerFilter(userId))
+  const list = await Startup.find(await visibleStartupFilter(userId))
     .sort({ createdAt: -1 })
     .lean();
   const result = list.map(toStartup);
@@ -48,7 +57,7 @@ startupsCrudDetailRouter.get("/:id", async (req, res) => {
     res.json(cached);
     return;
   }
-  const s = await findOwnedStartup(req.params.id, userId);
+  const s = await findAccessibleStartup(req.params.id, userId);
   if (!s) {
     res.status(404).json({ detail: "Startup not found" });
     return;
@@ -80,9 +89,16 @@ startupsCrudDetailRouter.patch("/:id", async (req, res) => {
 
 startupsCrudDetailRouter.delete("/:id", async (req, res) => {
   const userId = res.locals.userId as string;
-  const s = await findOwnedStartup(req.params.id, userId);
+  const s = await findAccessibleStartup(req.params.id, userId);
   if (!s) {
     res.status(404).json({ detail: "Startup not found" });
+    return;
+  }
+  if (isSampleRecord(s)) {
+    await hideSampleAsset(userId, "startup", req.params.id);
+    await startupListCache.delete(cacheKey.startupList(userId));
+    await startupDetailCache.delete(cacheKey.startupDetail(req.params.id, userId));
+    res.status(204).send();
     return;
   }
   const now = new Date();

@@ -35,11 +35,14 @@ const schema = new mongoose.Schema(
     default: "pending",
   },
   portfolioReviewNotes: { type: String, default: null },
+  /** Global demo workspace — visible to all users; per-user hide via HiddenSampleAsset. */
+  isSample: { type: Boolean, default: false, index: true },
   },
   { timestamps: true },
 );
 
 schema.index({ deletedAt: 1 }, { sparse: true });
+schema.index({ isSample: 1, name: 1 });
 
 function excludeDeleted(this: mongoose.Query<unknown, unknown>): void {
   if (!("deletedAt" in (this.getFilter() as Record<string, unknown>))) {

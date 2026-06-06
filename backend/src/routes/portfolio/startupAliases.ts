@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { runPortfolioRescreen } from "../../lib/portfolio/rescreenScheduler";
 import { Startup } from "../../models";
-import { ownerFilter } from "../startups/middleware";
+import { visibleStartupFilter } from "../startups/middleware";
 import { toScreeningSummary } from "../startups/serializers";
 
 /** Legacy paths kept under /api/startups for frontend compatibility. */
@@ -9,7 +9,7 @@ export const portfolioStartupAliasesRouter = Router();
 
 portfolioStartupAliasesRouter.get("/screening-summary", async (req, res) => {
   const userId = res.locals.userId as string;
-  const list = await Startup.find(ownerFilter(userId))
+  const list = await Startup.find(await visibleStartupFilter(userId))
     .sort({ createdAt: -1 })
     .lean();
   res.json(list.map(toScreeningSummary));

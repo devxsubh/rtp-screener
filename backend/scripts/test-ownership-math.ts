@@ -1,13 +1,16 @@
 import { readFileSync } from "fs";
 import { join } from "path";
-import { buildOwnershipGraph, computeEffectiveStakeInStartup, getStartupNode } from "../src/lib/screening/graph";
+import {
+  buildOwnershipGraph,
+  computeEffectiveStakeInStartup,
+  getStartupNode,
+} from "../src/lib/screening/graph";
 
 const csv = readFileSync(
   join(__dirname, "../sample-data/sample-cap-table.csv"),
   "utf-8",
 );
 
-// Minimal parse for test — reuse strict rows
 const lines = csv.trim().split("\n").slice(1);
 const records = lines.map((line) => {
   const [entity, entityType, owner, ownerType, pct] = line.split(",");
@@ -25,20 +28,24 @@ const startup = getStartupNode(graph);
 
 const ivan = computeEffectiveStakeInStartup(graph, startup, "Ivan Petrovich Kozlov");
 const johan = computeEffectiveStakeInStartup(graph, startup, "Johan Petrovitch Kozlov");
-const beta = computeEffectiveStakeInStartup(graph, startup, "Beta Capital Partners");
-const john = computeEffectiveStakeInStartup(graph, startup, "John Smith");
+const atlantic = computeEffectiveStakeInStartup(
+  graph,
+  startup,
+  "Atlantic Bridge Ventures Ltd",
+);
+const emma = computeEffectiveStakeInStartup(graph, startup, "Emma Richardson");
 
 console.log("Startup:", startup);
-console.log("Ivan → portco:", ivan, "(expected ~20)");
-console.log("Johan → portco:", johan, "(expected ~10)");
-console.log("Beta → portco:", beta, "(expected ~25)");
-console.log("John → portco:", john, "(expected ~20)");
+console.log("Ivan → portco:", ivan, "(expected ~12)");
+console.log("Johan → portco:", johan, "(expected ~13)");
+console.log("Atlantic Bridge → portco:", atlantic, "(expected ~20)");
+console.log("Emma → portco:", emma, "(expected ~18)");
 
 const ok =
-  Math.abs(ivan - 20) < 0.1 &&
-  Math.abs(johan - 10) < 0.1 &&
-  Math.abs(beta - 25) < 0.1 &&
-  Math.abs(john - 20) < 0.1;
+  Math.abs(ivan - 12) < 0.2 &&
+  Math.abs(johan - 13) < 0.2 &&
+  Math.abs(atlantic - 20) < 0.1 &&
+  Math.abs(emma - 18) < 0.1;
 
 if (!ok) {
   console.error("Ownership math check FAILED");

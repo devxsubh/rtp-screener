@@ -1,13 +1,39 @@
 entity,entity_type,owner,owner_type,ownership_pct
-AcmeTech Corp,company,Alpha Ventures LLC,company,35
-AcmeTech Corp,company,Beta Capital Partners,company,25
-AcmeTech Corp,company,John Smith,person,20
-AcmeTech Corp,company,Jane Doe,person,10
-AcmeTech Corp,company,Gamma Holdings Ltd,company,10
-Alpha Ventures LLC,company,Northwest Equity Fund,company,60
-Alpha Ventures LLC,company,Sarah Johnson,person,40
-Beta Capital Partners,company,Delta Trust International,company,100
-Delta Trust International,company,Coastal Finance Group,company,80
-Delta Trust International,company,Michael Chen,person,20
-Coastal Finance Group,company,Ivan Petrovich Kozlov,person,100
+NexaFlow AI Inc,company,Emma Richardson,person,18
+NexaFlow AI Inc,company,Marcus Webb,person,12
+NexaFlow AI Inc,company,Riverside Angel Syndicate LLC,company,8
+NexaFlow AI Inc,company,Horizon Seed Fund I LP,company,15
+NexaFlow AI Inc,company,NexaFlow 2024 Option Pool,company,10
+NexaFlow AI Inc,company,Atlantic Bridge Ventures Ltd,company,20
+NexaFlow AI Inc,company,Cascade Series A SPV LLC,company,12
+NexaFlow AI Inc,company,Apex Circular Holdings LP,company,5
+Riverside Angel Syndicate LLC,company,Mohammed Al Rahman,person,28
+Riverside Angel Syndicate LLC,company,James Okonkwo,person,36
+Riverside Angel Syndicate LLC,company,Patricia Lennox,person,36
+Horizon Seed Fund I LP,company,Horizon Capital Management LLC,company,2
+Horizon Seed Fund I LP,company,Meridian Ventures Partners LLC,company,38
+Horizon Seed Fund I LP,company,Pacific Coast Institutional LP,company,35
+Horizon Seed Fund I LP,company,Lakeside Family Office LLC,company,25
+Horizon Capital Management LLC,company,Emily Torres,person,100
+Meridian Ventures Partners LLC,company,Summit Ridge Capital LLC,company,60
+Meridian Ventures Partners LLC,company,Northern Lights Equity LLC,company,40
+Summit Ridge Capital LLC,company,Christopher Hale,person,55
+Summit Ridge Capital LLC,company,Rebecca Stone,person,45
+Northern Lights Equity LLC,company,Andrew Lindstrom,person,100
+Pacific Coast Institutional LP,company,Westfield Pension Trust,company,100
+Westfield Pension Trust,company,Thomas Bergstrom,person,100
+Lakeside Family Office LLC,company,Vanessa Whitmore,person,100
+Atlantic Bridge Ventures Ltd,company,Sterling Capital Partners Ltd,company,65
+Atlantic Bridge Ventures Ltd,company,Coastal Innovation GP LLC,company,35
+Sterling Capital Partners Ltd,company,Gamma Holdings Ltd,company,100
 Gamma Holdings Ltd,company,Johan Petrovitch Kozlov,person,100
+Coastal Innovation GP LLC,company,Sarah Mitchell,person,70
+Coastal Innovation GP LLC,company,David Park,person,30
+Cascade Series A SPV LLC,company,Meridian Offshore Holdings Ltd,company,100
+Meridian Offshore Holdings Ltd,company,Ashford Family Trust,company,100
+Ashford Family Trust,company,Ivan Petrovich Kozlov,person,100
+Apex Circular Holdings LP,company,Loopback Holdings Ltd,company,80
+Apex Circular Holdings LP,company,Pacific Rim Capital LLC,company,20
+Loopback Holdings Ltd,company,Apex Circular Holdings LP,company,100
+Pacific Rim Capital LLC,company,Wellington Family Trust,company,100
+Wellington Family Trust,company,Robert Chen,person,100

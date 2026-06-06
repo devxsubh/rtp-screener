@@ -6,6 +6,7 @@ import {
 import { buildScreeningPreview } from "../../lib/screening/screeningPreview";
 import { detectRosterPurpose } from "../../lib/screening/rosterPurpose";
 import { extractCsvTable } from "../../lib/screening/parseCapTable";
+import { rejectSampleWrite } from "./middleware";
 import { AuditLog, CapTableCsv, Startup } from "../../models";
 import { authIdentityOr500 } from "../../middleware/userIdentity";
 import type { RosterPurpose } from "../../types/screening";
@@ -74,6 +75,14 @@ startupsCsvRouter.post("/:id/csvs/analyze", async (req, res) => {
 });
 
 startupsCsvRouter.post("/:id/csvs", async (req, res) => {
+  if (
+    rejectSampleWrite(
+      res,
+      res.locals.accessibleStartup as Record<string, unknown> | undefined,
+    )
+  ) {
+    return;
+  }
   const { filename, content, confirmMapping } = req.body as {
     filename?: string;
     content?: string;

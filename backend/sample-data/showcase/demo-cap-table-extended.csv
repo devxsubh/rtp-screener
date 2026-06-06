@@ -1,0 +1,85 @@
+entity,entity_type,owner,owner_type,ownership_pct
+NexaFlow AI Inc,company,Emma Richardson,person,16
+NexaFlow AI Inc,company,Marcus Webb,person,11
+NexaFlow AI Inc,company,Riverside Angel Syndicate LLC,company,7
+NexaFlow AI Inc,company,Horizon Seed Fund I LP,company,14
+NexaFlow AI Inc,company,NexaFlow 2024 Option Pool,company,9
+NexaFlow AI Inc,company,Atlantic Bridge Ventures Ltd,company,19
+NexaFlow AI Inc,company,Cascade Series A SPV LLC,company,11
+NexaFlow AI Inc,company,Apex Circular Holdings LP,company,4
+NexaFlow AI Inc,company,Continental Growth Fund II LP,company,6
+NexaFlow AI Inc,company,Nordic Innovation Capital AB,company,3
+NexaFlow AI Inc,company,Asia-Pacific Ventures Pte Ltd,company,2
+NexaFlow AI Inc,company,Founder Secondary Vehicle LLC,company,2
+NexaFlow AI Inc,company,NexaFlow Advisor Equity Pool,company,6
+Riverside Angel Syndicate LLC,company,Mohammed Al Rahman,person,28
+Riverside Angel Syndicate LLC,company,James Okonkwo,person,36
+Riverside Angel Syndicate LLC,company,Patricia Lennox,person,36
+Horizon Seed Fund I LP,company,Horizon Capital Management LLC,company,2
+Horizon Seed Fund I LP,company,Meridian Ventures Partners LLC,company,32
+Horizon Seed Fund I LP,company,Pacific Coast Institutional LP,company,30
+Horizon Seed Fund I LP,company,Lakeside Family Office LLC,company,20
+Horizon Seed Fund I LP,company,Blackstone Tactical Opportunities LP,company,8
+Horizon Seed Fund I LP,company,State Teachers Pension Trust,company,8
+Horizon Capital Management LLC,company,Emily Torres,person,100
+Meridian Ventures Partners LLC,company,Summit Ridge Capital LLC,company,55
+Meridian Ventures Partners LLC,company,Northern Lights Equity LLC,company,30
+Meridian Ventures Partners LLC,company,Carlyle Secondary Partners LLC,company,15
+Summit Ridge Capital LLC,company,Christopher Hale,person,55
+Summit Ridge Capital LLC,company,Rebecca Stone,person,45
+Northern Lights Equity LLC,company,Andrew Lindstrom,person,100
+Carlyle Secondary Partners LLC,company,Carlyle Group Holdings LLC,company,100
+Carlyle Group Holdings LLC,company,William Conway Jr,person,40
+Carlyle Group Holdings LLC,company,Daniel D'Aniello,person,30
+Carlyle Group Holdings LLC,company,David Rubenstein,person,30
+Pacific Coast Institutional LP,company,Westfield Pension Trust,company,100
+Westfield Pension Trust,company,Thomas Bergstrom,person,100
+Lakeside Family Office LLC,company,Vanessa Whitmore,person,100
+Blackstone Tactical Opportunities LP,company,Blackstone Tactical GP LLC,company,2
+Blackstone Tactical Opportunities LP,company,Institutional LP Pool A,company,98
+Blackstone Tactical GP LLC,company,Jonathan Gray,person,100
+Institutional LP Pool A,company,Public Pension Consortium,company,60
+Institutional LP Pool A,company,Sovereign Reserve Fund Ltd,company,40
+State Teachers Pension Trust,company,California Teachers Board,company,100
+California Teachers Board,company,Margaret Sullivan,person,100
+Atlantic Bridge Ventures Ltd,company,Sterling Capital Partners Ltd,company,62
+Atlantic Bridge Ventures Ltd,company,Coastal Innovation GP LLC,company,38
+Sterling Capital Partners Ltd,company,Gamma Holdings Ltd,company,70
+Sterling Capital Partners Ltd,company,Beta Capital Partners Ltd,company,30
+Gamma Holdings Ltd,company,Johan Petrovitch Kozlov,person,100
+Beta Capital Partners Ltd,company,Marshall Capital Holdings LLC,company,100
+Marshall Capital Holdings LLC,company,Elena Volkov,person,100
+Coastal Innovation GP LLC,company,Sarah Mitchell,person,70
+Coastal Innovation GP LLC,company,David Park,person,30
+Cascade Series A SPV LLC,company,Meridian Offshore Holdings Ltd,company,85
+Cascade Series A SPV LLC,company,Cascade Nominee Ltd,company,15
+Meridian Offshore Holdings Ltd,company,Ashford Family Trust,company,100
+Ashford Family Trust,company,Ivan Petrovich Kozlov,person,100
+Cascade Nominee Ltd,company,Geneva Fiduciary Services SA,company,100
+Geneva Fiduciary Services SA,company,Philippe Dubois,person,100
+Apex Circular Holdings LP,company,Loopback Holdings Ltd,company,80
+Apex Circular Holdings LP,company,Pacific Rim Capital LLC,company,20
+Loopback Holdings Ltd,company,Apex Circular Holdings LP,company,100
+Pacific Rim Capital LLC,company,Wellington Family Trust,company,100
+Wellington Family Trust,company,Robert Chen,person,100
+Continental Growth Fund II LP,company,Continental Growth GP Sarl,company,2
+Continental Growth Fund II LP,company,European Institutional Pool,company,98
+Continental Growth GP Sarl,company,Helene Moreau,person,100
+European Institutional Pool,company,Deutsche Pensionsfonds AG,company,40
+European Institutional Pool,company,BNP Paribas Asset Partners,company,35
+European Institutional Pool,company,Allianz Global Investors GmbH,company,25
+Deutsche Pensionsfonds AG,company,Klaus Weber,person,100
+BNP Paribas Asset Partners,company,Marie Laurent,person,100
+Allianz Global Investors GmbH,company,Stefan Richter,person,100
+Nordic Innovation Capital AB,company,Nordic Innovation Holding AS,company,100
+Nordic Innovation Holding AS,company,Erik Lindqvist,person,60
+Nordic Innovation Holding AS,company,Ingrid Svensson,person,40
+Asia-Pacific Ventures Pte Ltd,company,Singapore Growth Partners Pte Ltd,company,100
+Singapore Growth Partners Pte Ltd,company,Wei Zhang,person,55
+Singapore Growth Partners Pte Ltd,company,Priya Sharma,person,45
+Founder Secondary Vehicle LLC,company,Emma Richardson,person,50
+Founder Secondary Vehicle LLC,company,Marcus Webb,person,50
+NexaFlow Advisor Equity Pool,company,Dr. Anya Petrov,person,40
+NexaFlow Advisor Equity Pool,company,Richard Hammond,person,35
+NexaFlow Advisor Equity Pool,company,Lisa Nakamura,person,25
+NexaFlow 2024 Option Pool,company,Reserved — unallocated,company,100

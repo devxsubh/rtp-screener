@@ -2,6 +2,11 @@ import express from "express";
 import mongoose from "mongoose";
 import { connectDb } from "../lib/infra/db";
 import { requireAuth } from "../middleware/requireAuth";
+import {
+  findAccessibleAssistantChat,
+  isWritableChat,
+  visibleAssistantChatFilter,
+} from "../lib/sample/sampleAssets";
 import { AssistantChat } from "../models";
 import { chatListCache, TTL, cacheKey } from "../lib/infra/cache";
 
@@ -48,7 +53,7 @@ chatsRouter.get("/", async (req, res) => {
     return;
   }
 
-  const docs = await AssistantChat.find({ userId })
+  const docs = await AssistantChat.find(await visibleAssistantChatFilter(userId))
     .sort({ updatedAt: -1 })
     .limit(100)
     .lean();
@@ -82,20 +87,16 @@ chatsRouter.get("/:id", async (req, res) => {
     return;
   }
 
-  const doc = await AssistantChat.findOne({
-    _id: req.params.id,
-    userId,
-  }).lean();
+  const doc = await findAccessibleAssistantChat(req.params.id, userId);
 
   if (!doc) {
     res.status(404).json({ detail: "Chat not found" });
     return;
   }
 
-  const raw = doc as Record<string, unknown>;
   res.json({
-    chat: toChat(raw),
-    messages: (raw.messages as unknown[]) ?? [],
+    chat: toChat(doc),
+    messages: (doc.messages as unknown[]) ?? [],
   });
 });
 
@@ -105,6 +106,12 @@ chatsRouter.patch("/:id", async (req, res) => {
   const { title } = req.body as { title?: string };
   if (!title?.trim()) {
     res.status(400).json({ detail: "title is required" });
+    return;
+  }
+
+  const existing = await findAccessibleAssistantChat(req.params.id, userId);
+  if (!existing || !isWritableChat(existing, userId)) {
+    res.status(404).json({ detail: "Chat not found" });
     return;
   }
 
@@ -132,6 +139,12 @@ chatsRouter.put("/:id/messages", async (req, res) => {
     return;
   }
 
+  const existing = await findAccessibleAssistantChat(req.params.id, userId);
+  if (!existing || !isWritableChat(existing, userId)) {
+    res.status(404).json({ detail: "Chat not found" });
+    return;
+  }
+
   const doc = await AssistantChat.findOneAndUpdate(
     { _id: req.params.id, userId },
     { $set: { messages, updatedAt: new Date() } },
@@ -152,6 +165,12 @@ chatsRouter.post("/:id/generate-title", async (req, res) => {
   const { message } = req.body as { message?: string };
   const title = deriveTitle(message ?? "");
 
+  const existing = await findAccessibleAssistantChat(req.params.id, userId);
+  if (!existing || !isWritableChat(existing, userId)) {
+    res.status(404).json({ detail: "Chat not found" });
+    return;
+  }
+
   const doc = await AssistantChat.findOneAndUpdate(
     { _id: req.params.id, userId },
     { $set: { title, updatedAt: new Date() } },
@@ -170,6 +189,12 @@ chatsRouter.post("/:id/generate-title", async (req, res) => {
 // DELETE /api/chats/:id
 chatsRouter.delete("/:id", async (req, res) => {
   const userId = res.locals.userId as string;
+  const existing = await findAccessibleAssistantChat(req.params.id, userId);
+  if (!existing || !isWritableChat(existing, userId)) {
+    res.status(404).json({ detail: "Chat not found" });
+    return;
+  }
+
   const result = await AssistantChat.findOneAndDelete({
     _id: req.params.id,
     userId,

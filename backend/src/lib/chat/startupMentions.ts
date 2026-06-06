@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { connectDb } from "../infra/db";
+import { visibleStartupFilter } from "../sample/sampleAssets";
 import { Startup } from "../../models";
 import { screeningSummary } from "../screening/runScreening";
 import type { ScreeningResult } from "../../types/screening";
@@ -42,10 +43,9 @@ export async function resolveStartupMentions(
   if (tokens.length === 0) return [];
   await connectDb();
 
-  const query: Record<string, unknown> = {};
-  if (userId) query.ownerId = userId;
-
-  const startups = await Startup.find(query).lean();
+  const startups = userId
+    ? await Startup.find(await visibleStartupFilter(userId)).lean()
+    : await Startup.find({ isSample: true }).lean();
   const byId = new Map<string, Record<string, unknown>>();
   const byName = new Map<string, Record<string, unknown>>();
   for (const s of startups as Array<Record<string, unknown>>) {
